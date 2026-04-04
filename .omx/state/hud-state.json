@@ -1,5 +1,5 @@
 {
-  "last_turn_at": "2026-04-04T04:53:53.446Z",
-  "turn_count": 75,
-  "last_agent_output": "Collapsed state now shows a left-aligned `Sessions >` button instead of the icon on the right. The c"
+  "last_turn_at": "2026-04-04T06:04:38.885Z",
+  "turn_count": 77,
+  "last_agent_output": "Moved `Add Agent` to the top-right by changing the React Flow panel anchor in [flow-graph.tsx](/User"
 }

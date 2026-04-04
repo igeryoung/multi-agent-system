@@ -12,12 +12,16 @@ import {
   type AgentNodeData
 } from "@/lib/adapters";
 import { AppShell } from "@/components/layout/app-shell";
-import { SessionSidebar } from "@/components/layout/session-sidebar";
+import {
+  SessionSidebar,
+  SessionSidebarToggle
+} from "@/components/layout/session-sidebar";
 import { FlowGraph } from "@/components/graph/flow-graph";
 import { ConversationPanel } from "@/components/conversation/conversation-panel";
 import { AgentDrawer } from "@/components/graph/agent-drawer";
 import { AddAgentButton } from "@/components/graph/add-agent-button";
 import { getRoleById } from "@/shared/contracts/types";
+import { Plus } from "lucide-react";
 
 const SESSION_SIDEBAR_VISIBILITY_KEY = "signal-atlas:session-sidebar-visible";
 
@@ -191,7 +195,8 @@ export function App() {
 
   return (
     <AppShell
-      sessionSidebar={
+      isSidebarVisible={isSessionSidebarVisible}
+      sessionSidebar={isSessionSidebarVisible ? (
         <SessionSidebar
           sessions={sessionStore.sessions.map((session) => {
             const sessionProjection = runStore.getProjection(session.linkedRunId);
@@ -205,14 +210,16 @@ export function App() {
               isRunBacked: Boolean(session.linkedRunId)
             };
           })}
-          isExpanded={isSessionSidebarVisible}
-          onToggleExpanded={() => setIsSessionSidebarVisible((current) => !current)}
           onCreateSession={sessionStore.createSession}
           onSelectSession={sessionStore.setActiveSessionId}
           onRenameSession={sessionStore.renameSession}
           onDeleteSession={sessionStore.deleteSession}
+          onCollapse={() => setIsSessionSidebarVisible(false)}
         />
-      }
+      ) : null}
+      sessionSidebarToggle={isSessionSidebarVisible ? null : (
+        <SessionSidebarToggle onExpand={() => setIsSessionSidebarVisible(true)} />
+      )}
       projection={projection}
       isLive={isLive}
       drawerContent={drawerContent}
@@ -230,6 +237,17 @@ export function App() {
               />
             ) : undefined
           }
+          emptyState={isPreRun ? (
+            <div className="flex flex-col items-center text-center pointer-events-none">
+              <div className="w-12 h-12 rounded-xl bg-zinc-100 flex items-center justify-center mb-3">
+                <Plus className="w-6 h-6 text-zinc-400" />
+              </div>
+              <h3 className="text-sm font-semibold text-zinc-700 mb-1">Add your first agent</h3>
+              <p className="text-xs text-zinc-500 max-w-[220px]">
+                Use the + button above to add agents to the canvas, then describe a task to start.
+              </p>
+            </div>
+          ) : undefined}
         />
       )}
       conversationPanel={(

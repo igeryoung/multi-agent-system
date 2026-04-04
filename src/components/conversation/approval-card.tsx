@@ -7,20 +7,25 @@ interface ApprovalCardProps {
   onApprove: () => void;
   onReject: () => void;
   resolved?: boolean;
+  pinned?: boolean;
 }
 
 export function ApprovalCard({
   message,
   onApprove,
   onReject,
-  resolved
+  resolved,
+  pinned
 }: ApprovalCardProps) {
   const actionLabel = String(message.metadata?.actionLabel ?? message.content);
   const impact = String(message.metadata?.impact ?? "");
   const reason = String(message.metadata?.reason ?? "");
 
   return (
-    <div className="mx-2 my-2 rounded-xl border border-amber-200 bg-amber-50/60 p-4 animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
+    <div className={pinned
+      ? "p-4"
+      : "mx-2 my-2 rounded-xl border border-amber-200 bg-amber-50/60 p-4 animate-in fade-in-0 slide-in-from-bottom-2 duration-300"
+    }>
       <div className="flex items-start gap-3">
         <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center shrink-0 mt-0.5">
           <ShieldAlert className="w-4 h-4 text-amber-600" />

@@ -40,7 +40,7 @@ export function AddAgentButton({ availableRoles, onAddAgent }: AddAgentButtonPro
       </button>
 
       {open && availableRoles.length > 0 && (
-        <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-lg border border-zinc-200 shadow-lg z-50 py-1">
+        <div className="absolute top-full right-0 mt-1 w-56 bg-white rounded-lg border border-zinc-200 shadow-lg z-50 py-1">
           {availableRoles.map((role) => (
             <button
               key={role.id}

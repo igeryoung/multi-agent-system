@@ -29,7 +29,7 @@ export function TaskInput({
   }
 
   return (
-    <div className="p-4 border-b border-zinc-100">
+    <div className="p-4 border-t border-zinc-100">
       <div className="space-y-3">
         <div>
           <label

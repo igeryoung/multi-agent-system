@@ -45,7 +45,7 @@ export function AgentDrawer({
   const responsibility = agent.responsibility;
 
   return (
-    <div className="absolute inset-0 z-10 bg-white flex flex-col animate-in slide-in-from-right duration-200">
+    <div className="absolute inset-y-0 right-0 z-10 w-[320px] max-w-full bg-white border-l border-zinc-200 shadow-lg flex flex-col animate-in slide-in-from-right duration-200">
       <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100">
         <div className="flex items-center gap-2 min-w-0">
           <div

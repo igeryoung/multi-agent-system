@@ -46,18 +46,12 @@ export function ConversationPanel({
     bottomRef.current?.scrollIntoView?.({ behavior: "smooth" });
   }, [messages.length]);
 
+  const pinnedApproval = approvalPending
+    ? [...messages].reverse().find((m) => m.type === "approval_request") ?? null
+    : null;
+
   return (
     <div className="flex flex-col h-full">
-      <TaskInput
-        task={task}
-        onTaskChange={onTaskChange}
-        onStartRun={onStartRun}
-        disabled={taskInputDisabled ?? isLive}
-        hasAgents={hasAgents}
-        helperText={helperText}
-        submitLabel={submitLabel}
-      />
-
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-3">
           {messages.length === 0 ? (
@@ -76,6 +70,28 @@ export function ConversationPanel({
           <div ref={bottomRef} />
         </div>
       </ScrollArea>
+
+      {pinnedApproval && (
+        <div className="border-t border-amber-200 bg-amber-50/80 backdrop-blur-sm shadow-[0_-2px_8px_rgba(0,0,0,0.04)]">
+          <ApprovalCard
+            message={pinnedApproval}
+            onApprove={onApprove}
+            onReject={onReject}
+            resolved={false}
+            pinned
+          />
+        </div>
+      )}
+
+      <TaskInput
+        task={task}
+        onTaskChange={onTaskChange}
+        onStartRun={onStartRun}
+        disabled={taskInputDisabled ?? isLive}
+        hasAgents={hasAgents}
+        helperText={helperText}
+        submitLabel={submitLabel}
+      />
     </div>
   );
 }
@@ -126,7 +142,7 @@ function EmptyState() {
         No activity yet
       </h3>
       <p className="text-xs text-muted-foreground max-w-[200px]">
-        Submit a task above to start the multi-agent collaboration.
+        Submit a task below to start the multi-agent collaboration.
       </p>
     </div>
   );

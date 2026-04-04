@@ -24,15 +24,16 @@ interface FlowGraphProps {
   onNodesChange?: OnNodesChangeGeneric<Node<AgentNodeData>>;
   onNodeClick?: (nodeId: string) => void;
   extraControls?: ReactNode;
+  emptyState?: ReactNode;
 }
 
-export function FlowGraph({ nodes, edges, onNodesChange, onNodeClick, extraControls }: FlowGraphProps) {
+export function FlowGraph({ nodes, edges, onNodesChange, onNodeClick, extraControls, emptyState }: FlowGraphProps) {
   const handleNodeClick: NodeMouseHandler = useCallback((_event, node) => {
     onNodeClick?.(node.id);
   }, [onNodeClick]);
 
   return (
-    <div className="w-full h-full min-h-[400px] rounded-xl border border-zinc-100 bg-zinc-50/30 overflow-hidden">
+    <div className="w-full h-full min-h-[400px] rounded-xl border border-zinc-100 bg-zinc-50/30">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -52,8 +53,13 @@ export function FlowGraph({ nodes, edges, onNodesChange, onNodeClick, extraContr
       >
         <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#e4e4e7" />
         {extraControls && (
-          <Panel position="top-left">
+          <Panel position="top-right">
             {extraControls}
+          </Panel>
+        )}
+        {nodes.length === 0 && emptyState && (
+          <Panel position="top-center" className="!top-1/2 !-translate-y-1/2">
+            {emptyState}
           </Panel>
         )}
       </ReactFlow>

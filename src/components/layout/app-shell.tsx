@@ -11,6 +11,8 @@ import { Activity, Zap } from "lucide-react";
 
 interface AppShellProps {
   sessionSidebar: ReactNode;
+  sessionSidebarToggle?: ReactNode | null;
+  isSidebarVisible: boolean;
   graphPanel: ReactNode;
   conversationPanel: ReactNode;
   drawerContent: ReactNode | null;
@@ -31,6 +33,8 @@ const phaseColors: Record<string, string> = {
 
 export function AppShell({
   sessionSidebar,
+  sessionSidebarToggle,
+  isSidebarVisible,
   graphPanel,
   conversationPanel,
   drawerContent,
@@ -87,15 +91,20 @@ export function AppShell({
         </div>
         <ResizablePanelGroup orientation="horizontal" className="flex-1">
           <ResizablePanel defaultSize={60} minSize={35}>
-            <div className="h-full p-4">
+            <div className={cn("relative h-full p-4 transition-[padding] duration-200", isSidebarVisible && "pl-[280px]")}>
+              {sessionSidebarToggle && (
+                <div className="pointer-events-none absolute left-0 top-0 z-30">
+                  {sessionSidebarToggle}
+                </div>
+              )}
               {graphPanel}
+              {drawerContent}
             </div>
           </ResizablePanel>
           <ResizableHandle withHandle />
           <ResizablePanel defaultSize={40} minSize={25}>
-            <div className="relative h-full bg-white border-l border-zinc-100">
+            <div className="h-full bg-white border-l border-zinc-100">
               {conversationPanel}
-              {drawerContent}
             </div>
           </ResizablePanel>
         </ResizablePanelGroup>
