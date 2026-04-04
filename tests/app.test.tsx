@@ -79,6 +79,23 @@ describe("App", () => {
     expect(screen.getByTestId("node-count")).toHaveTextContent("1 nodes");
   });
 
+  test("hides and restores the sessions sidebar from the header toggle", () => {
+    render(<App />);
+
+    fireEvent.change(screen.getByLabelText(/task/i), {
+      target: { value: "Keep the canvas visible" }
+    });
+
+    expect(screen.getByRole("button", { name: /create session/i })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /collapse sessions sidebar/i }));
+    expect(screen.queryByRole("button", { name: /create session/i })).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/task/i)).toHaveValue("Keep the canvas visible");
+
+    fireEvent.click(screen.getByRole("button", { name: /expand sessions sidebar/i }));
+    expect(screen.getByRole("button", { name: /create session/i })).toBeInTheDocument();
+  });
+
   test("deletes only the selected non-live session and falls back to the remaining session", () => {
     vi.spyOn(window, "confirm").mockReturnValue(true);
 

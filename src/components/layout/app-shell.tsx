@@ -81,8 +81,10 @@ export function AppShell({
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
-        {sessionSidebar}
+      <div className="relative flex flex-1 overflow-hidden">
+        <div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-[272px] overflow-visible">
+          {sessionSidebar}
+        </div>
         <ResizablePanelGroup orientation="horizontal" className="flex-1">
           <ResizablePanel defaultSize={60} minSize={35}>
             <div className="h-full p-4">

@@ -19,10 +19,23 @@ import { AgentDrawer } from "@/components/graph/agent-drawer";
 import { AddAgentButton } from "@/components/graph/add-agent-button";
 import { getRoleById } from "@/shared/contracts/types";
 
+const SESSION_SIDEBAR_VISIBILITY_KEY = "signal-atlas:session-sidebar-visible";
+
 export function App() {
   const runStore = useRunStore();
   const sessionStore = useSessionStore({ runMap: runStore.runMap });
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
+  const [isSessionSidebarVisible, setIsSessionSidebarVisible] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return window.localStorage.getItem(SESSION_SIDEBAR_VISIBILITY_KEY) !== "false";
+  });
+
+  useEffect(() => {
+    window.localStorage.setItem(
+      SESSION_SIDEBAR_VISIBILITY_KEY,
+      String(isSessionSidebarVisible)
+    );
+  }, [isSessionSidebarVisible]);
 
   const activeSession = sessionStore.activeSession;
   const activeRunId = activeSession?.linkedRunId ?? null;
@@ -192,6 +205,8 @@ export function App() {
               isRunBacked: Boolean(session.linkedRunId)
             };
           })}
+          isExpanded={isSessionSidebarVisible}
+          onToggleExpanded={() => setIsSessionSidebarVisible((current) => !current)}
           onCreateSession={sessionStore.createSession}
           onSelectSession={sessionStore.setActiveSessionId}
           onRenameSession={sessionStore.renameSession}
