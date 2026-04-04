@@ -1,0 +1,367 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1775181911253,
+  "projectRoot": "/Users/yangping/Studio/side-project/multi-agent-system",
+  "techStack": {
+    "languages": [
+      {
+        "name": "JavaScript/TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "package.json"
+        ]
+      },
+      {
+        "name": "TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "tsconfig.json"
+        ]
+      }
+    ],
+    "frameworks": [
+      {
+        "name": "react",
+        "version": "19.2.0",
+        "category": "frontend"
+      },
+      {
+        "name": "react-dom",
+        "version": "19.2.0",
+        "category": "frontend"
+      },
+      {
+        "name": "vite",
+        "version": "7.1.10",
+        "category": "build"
+      },
+      {
+        "name": "vitest",
+        "version": "3.2.4",
+        "category": "testing"
+      }
+    ],
+    "packageManager": "npm",
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": "npm run build",
+    "testCommand": "npm test",
+    "lintCommand": null,
+    "devCommand": "npm run dev",
+    "scripts": {
+      "dev": "vite",
+      "build": "tsc -p tsconfig.json && vite build",
+      "preview": "vite preview",
+      "test": "vitest run",
+      "test:watch": "vitest",
+      "check": "tsc -p tsconfig.json --noEmit"
+    }
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": "*.test.ts",
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "src",
+      "tests"
+    ],
+    "gitBranches": null
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "dist": {
+      "path": "dist",
+      "purpose": "Distribution/build output",
+      "fileCount": 1,
+      "lastAccessed": 1775181911237,
+      "keyFiles": [
+        "index.html"
+      ]
+    },
+    "src": {
+      "path": "src",
+      "purpose": "Source code",
+      "fileCount": 2,
+      "lastAccessed": 1775181911237,
+      "keyFiles": [
+        "main.tsx",
+        "styles.css"
+      ]
+    },
+    "tests": {
+      "path": "tests",
+      "purpose": "Test files",
+      "fileCount": 3,
+      "lastAccessed": 1775181911239,
+      "keyFiles": [
+        "app.test.tsx",
+        "projectRun.test.ts",
+        "setup.ts"
+      ]
+    },
+    "dist/assets": {
+      "path": "dist/assets",
+      "purpose": "Static assets",
+      "fileCount": 2,
+      "lastAccessed": 1775181911240,
+      "keyFiles": [
+        "index-CC4uXjAg.css",
+        "index-DA5Zckqz.js"
+      ]
+    },
+    "src/app": {
+      "path": "src/app",
+      "purpose": "Application code",
+      "fileCount": 1,
+      "lastAccessed": 1775181911241,
+      "keyFiles": [
+        "App.tsx"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "src/app/App.tsx",
+      "accessCount": 21,
+      "lastAccessed": 1775263614139,
+      "type": "file"
+    },
+    {
+      "path": "",
+      "accessCount": 15,
+      "lastAccessed": 1775226325530,
+      "type": "directory"
+    },
+    {
+      "path": "src",
+      "accessCount": 14,
+      "lastAccessed": 1775263502580,
+      "type": "directory"
+    },
+    {
+      "path": "tests/app.test.tsx",
+      "accessCount": 13,
+      "lastAccessed": 1775263458065,
+      "type": "file"
+    },
+    {
+      "path": "src/components/graph/flow-graph.tsx",
+      "accessCount": 13,
+      "lastAccessed": 1775263607171,
+      "type": "file"
+    },
+    {
+      "path": "src/components/graph/agent-node.tsx",
+      "accessCount": 12,
+      "lastAccessed": 1775263592554,
+      "type": "file"
+    },
+    {
+      "path": "src/lib/adapters.ts",
+      "accessCount": 11,
+      "lastAccessed": 1775263473643,
+      "type": "file"
+    },
+    {
+      "path": "src/shared/contracts/types.ts",
+      "accessCount": 10,
+      "lastAccessed": 1775263502650,
+      "type": "file"
+    },
+    {
+      "path": "src/components/layout/app-shell.tsx",
+      "accessCount": 10,
+      "lastAccessed": 1775263561008,
+      "type": "file"
+    },
+    {
+      "path": "src/components/conversation/conversation-panel.tsx",
+      "accessCount": 9,
+      "lastAccessed": 1775263457882,
+      "type": "file"
+    },
+    {
+      "path": "src/server/orchestrator/scenario.ts",
+      "accessCount": 8,
+      "lastAccessed": 1775226336008,
+      "type": "file"
+    },
+    {
+      "path": "src/components/conversation/task-input.tsx",
+      "accessCount": 8,
+      "lastAccessed": 1775263457325,
+      "type": "file"
+    },
+    {
+      "path": "src/server/events/projectRun.ts",
+      "accessCount": 7,
+      "lastAccessed": 1775226204902,
+      "type": "file"
+    },
+    {
+      "path": "package.json",
+      "accessCount": 7,
+      "lastAccessed": 1775263467823,
+      "type": "file"
+    },
+    {
+      "path": "tsconfig.json",
+      "accessCount": 6,
+      "lastAccessed": 1775201178040,
+      "type": "file"
+    },
+    {
+      "path": "src/main.tsx",
+      "accessCount": 6,
+      "lastAccessed": 1775201198348,
+      "type": "file"
+    },
+    {
+      "path": "vite.config.ts",
+      "accessCount": 6,
+      "lastAccessed": 1775201486084,
+      "type": "file"
+    },
+    {
+      "path": "src/server/events/storage.ts",
+      "accessCount": 6,
+      "lastAccessed": 1775225662683,
+      "type": "file"
+    },
+    {
+      "path": "src/hooks/use-canvas-agents.ts",
+      "accessCount": 6,
+      "lastAccessed": 1775263569324,
+      "type": "file"
+    },
+    {
+      "path": "tests/projectRun.test.ts",
+      "accessCount": 5,
+      "lastAccessed": 1775226325670,
+      "type": "file"
+    },
+    {
+      "path": "src/hooks/use-run-store.ts",
+      "accessCount": 5,
+      "lastAccessed": 1775226335359,
+      "type": "file"
+    },
+    {
+      "path": "src/hooks/use-live-drain.ts",
+      "accessCount": 5,
+      "lastAccessed": 1775226335907,
+      "type": "file"
+    },
+    {
+      "path": "src/styles.css",
+      "accessCount": 4,
+      "lastAccessed": 1775183440018,
+      "type": "file"
+    },
+    {
+      "path": "src/components/graph/role-palette.tsx",
+      "accessCount": 4,
+      "lastAccessed": 1775226341214,
+      "type": "file"
+    },
+    {
+      "path": "src/components/graph/add-agent-button.tsx",
+      "accessCount": 4,
+      "lastAccessed": 1775263457240,
+      "type": "file"
+    },
+    {
+      "path": "src/components/graph/agent-drawer.tsx",
+      "accessCount": 4,
+      "lastAccessed": 1775263457753,
+      "type": "file"
+    },
+    {
+      "path": "tests/setup.ts",
+      "accessCount": 3,
+      "lastAccessed": 1775183455086,
+      "type": "file"
+    },
+    {
+      "path": "index.html",
+      "accessCount": 3,
+      "lastAccessed": 1775263468076,
+      "type": "file"
+    },
+    {
+      "path": ".omx/plans/test-spec-multi-agent-system-app.md",
+      "accessCount": 1,
+      "lastAccessed": 1775183452693,
+      "type": "file"
+    },
+    {
+      "path": ".omx/plans/prd-multi-agent-system-app.md",
+      "accessCount": 1,
+      "lastAccessed": 1775183452809,
+      "type": "file"
+    },
+    {
+      "path": ".omx/specs/deep-interview-multi-agent-system-app.md",
+      "accessCount": 1,
+      "lastAccessed": 1775183453128,
+      "type": "file"
+    },
+    {
+      "path": "src/index.css",
+      "accessCount": 1,
+      "lastAccessed": 1775201194234,
+      "type": "file"
+    },
+    {
+      "path": "src/lib/utils.ts",
+      "accessCount": 1,
+      "lastAccessed": 1775201207901,
+      "type": "file"
+    },
+    {
+      "path": "components.json",
+      "accessCount": 1,
+      "lastAccessed": 1775201214748,
+      "type": "file"
+    },
+    {
+      "path": "src/components/conversation/message-bubble.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1775201744562,
+      "type": "file"
+    },
+    {
+      "path": "src/components/conversation/approval-card.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1775201752202,
+      "type": "file"
+    },
+    {
+      "path": "src/components/ui/resizable.tsx",
+      "accessCount": 1,
+      "lastAccessed": 1775201809573,
+      "type": "file"
+    },
+    {
+      "path": "tests",
+      "accessCount": 1,
+      "lastAccessed": 1775226349107,
+      "type": "directory"
+    },
+    {
+      "path": "src/shared",
+      "accessCount": 1,
+      "lastAccessed": 1775263456761,
+      "type": "directory"
+    }
+  ],
+  "userDirectives": []
+}

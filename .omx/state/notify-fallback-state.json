@@ -1,0 +1,67 @@
+{
+  "pid": 51224,
+  "parent_pid": 51160,
+  "started_at": "2026-04-02T12:37:33.611Z",
+  "cwd": "/Users/yangping/Studio/side-project/multi-agent-system",
+  "notify_script": "/Users/yangping/.nvm/versions/node/v22.13.1/lib/node_modules/oh-my-codex/dist/scripts/notify-hook.js",
+  "poll_ms": 250,
+  "pid_file": "/Users/yangping/Studio/side-project/multi-agent-system/.omx/state/notify-fallback.pid",
+  "max_lifetime_ms": 21600000,
+  "tracked_files": 13,
+  "seen_turns": 17,
+  "dispatch_drain": {
+    "enabled": true,
+    "max_per_tick": 5,
+    "run_count": 29819,
+    "leader_only": true,
+    "last_tick_at": "2026-04-02T18:33:20.429Z",
+    "last_result": {
+      "processed": 0,
+      "skipped": 0,
+      "failed": 0
+    },
+    "last_error": null
+  },
+  "leader_nudge": {
+    "enabled": true,
+    "leader_only": true,
+    "stale_threshold_ms": 180000,
+    "precomputed_leader_stale": true,
+    "last_tick_at": "2026-04-02T18:33:20.429Z",
+    "last_error": null,
+    "run_count": 29819
+  },
+  "ralph_continue_steer": {
+    "enabled": true,
+    "cadence_ms": 60000,
+    "message": "Ralph loop active continue",
+    "active": false,
+    "last_state_check_at": "2026-04-02T18:33:20.488Z",
+    "last_sent_at": "",
+    "cooldown_anchor_at": "2026-04-02T12:37:33.611Z",
+    "last_reason": "blocked_by_current_session",
+    "last_error": null,
+    "state_path": "",
+    "pane_id": "",
+    "pane_current_command": "",
+    "current_phase": "",
+    "shared_timestamp_path": "/Users/yangping/Studio/side-project/multi-agent-system/.omx/state/ralph-last-steer-at",
+    "shared_last_sent_at": "",
+    "singleton_lock_path": "/Users/yangping/Studio/side-project/multi-agent-system/.omx/state/ralph-continue-steer.lock"
+  },
+  "fallback_auto_nudge": {
+    "enabled": true,
+    "stall_ms": 5000,
+    "last_tick_at": "2026-04-02T18:33:20.484Z",
+    "last_turn_at": "2026-04-02T15:11:18.956Z",
+    "last_turn_count": 30,
+    "last_message": "Implemented the v1 app as a trust-first React/TypeScript SPA with an event-sourced orchestration cor",
+    "last_reason": "eligible_but_not_sent",
+    "last_error": null,
+    "last_nudged_signature": "",
+    "last_nudged_at": ""
+  },
+  "stop_reason": "max_lifetime_exceeded",
+  "stop_signal": null,
+  "stopping": true
+}
