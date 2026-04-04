@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { Activity, Zap } from "lucide-react";
 
 interface AppShellProps {
+  sessionSidebar: ReactNode;
   graphPanel: ReactNode;
   conversationPanel: ReactNode;
   drawerContent: ReactNode | null;
@@ -29,6 +30,7 @@ const phaseColors: Record<string, string> = {
 };
 
 export function AppShell({
+  sessionSidebar,
   graphPanel,
   conversationPanel,
   drawerContent,
@@ -79,20 +81,23 @@ export function AppShell({
         </div>
       </header>
 
-      <ResizablePanelGroup orientation="horizontal" className="flex-1">
-        <ResizablePanel defaultSize={60} minSize={35}>
-          <div className="h-full p-4">
-            {graphPanel}
-          </div>
-        </ResizablePanel>
-        <ResizableHandle withHandle />
-        <ResizablePanel defaultSize={40} minSize={25}>
-          <div className="relative h-full bg-white border-l border-zinc-100">
-            {conversationPanel}
-            {drawerContent}
-          </div>
-        </ResizablePanel>
-      </ResizablePanelGroup>
+      <div className="flex flex-1 overflow-hidden">
+        {sessionSidebar}
+        <ResizablePanelGroup orientation="horizontal" className="flex-1">
+          <ResizablePanel defaultSize={60} minSize={35}>
+            <div className="h-full p-4">
+              {graphPanel}
+            </div>
+          </ResizablePanel>
+          <ResizableHandle withHandle />
+          <ResizablePanel defaultSize={40} minSize={25}>
+            <div className="relative h-full bg-white border-l border-zinc-100">
+              {conversationPanel}
+              {drawerContent}
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      </div>
     </div>
   );
 }

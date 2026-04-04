@@ -1,5 +1,6 @@
 export type AgentKind = "head" | "role";
 export type ActorType = "system" | "user" | "head-agent" | "role-agent";
+export type RunLifecyclePhase = Exclude<RunPhase, "draft">;
 export type RunPhase =
   | "draft"
   | "planning"
@@ -107,6 +108,20 @@ export interface RunProjection {
   approval: ApprovalProjection;
   outputs: OutputProjection[];
   diagnostics: string[];
+}
+
+export interface SessionDraft {
+  taskInput: string;
+  selectedRoleIds: string[];
+}
+
+export interface SessionRecord {
+  sessionId: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+  linkedRunId: string | null;
+  draft: SessionDraft;
 }
 
 export const HEAD_AGENT = {

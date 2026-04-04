@@ -1,35 +1,89 @@
-import { startTransition, useEffect, useEffectEvent, useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import type { RunEvent, RunProjection } from "@/shared/contracts/types";
-import { appendAndPersistRunEvent } from "@/server/events/storage";
+import {
+  appendAndPersistRunEvent,
+  clearLiveRuntimeSnapshot,
+  loadLiveRuntimeSnapshot,
+  saveLiveRuntimeSnapshot
+} from "@/server/events/storage";
 import { projectRun } from "@/server/events/projectRun";
 import {
-  buildRunScenario,
-  buildApprovalResolutionEvents
+  buildApprovalResolutionEvents,
+  buildRunScenario
 } from "@/server/orchestrator/scenario";
 
 const LIVE_TICK_MS = 550;
 
 interface UseLiveDrainOptions {
-  activeRunId: string | null;
+  activeSessionId: string | null;
+  activeSessionHasLinkedRun: boolean;
+  liveSessionId: string | null;
+  liveRunId: string | null;
   runMap: Record<string, RunEvent[]>;
-  setActiveRunId: (id: string) => void;
   commitRunSnapshot: (runId: string, events: RunEvent[]) => void;
   updateRunEvents: (runId: string, events: RunEvent[]) => void;
+  attachRunToSession: (
+    sessionId: string,
+    runId: string,
+    taskInput: string,
+    selectedRoleIds: string[],
+    updatedAt: string
+  ) => void;
+  markLiveSession: (sessionId: string | null) => void;
+  setActiveSessionId: (sessionId: string) => void;
 }
 
 export function useLiveDrain({
-  activeRunId,
+  activeSessionId,
+  activeSessionHasLinkedRun,
+  liveSessionId,
+  liveRunId,
   runMap,
-  setActiveRunId,
   commitRunSnapshot,
-  updateRunEvents
+  updateRunEvents,
+  attachRunToSession,
+  markLiveSession,
+  setActiveSessionId
 }: UseLiveDrainOptions) {
-  const [liveRunId, setLiveRunId] = useState<string | null>(null);
   const [queue, setQueue] = useState<RunEvent[]>([]);
 
   const liveEvents = liveRunId ? runMap[liveRunId] ?? [] : [];
   const liveProjection: RunProjection = projectRun(liveEvents);
-  const isLive = Boolean(liveRunId);
+  const isLive = Boolean(liveSessionId);
+
+  useEffect(() => {
+    const snapshot = loadLiveRuntimeSnapshot();
+
+    if (liveRunId && snapshot.runId === liveRunId) {
+      setQueue(snapshot.queue);
+      return;
+    }
+
+    if (liveRunId) {
+      setQueue([]);
+      if (snapshot.runId && snapshot.runId !== liveRunId) {
+        clearLiveRuntimeSnapshot();
+      } else {
+        saveLiveRuntimeSnapshot({ runId: liveRunId, queue: [] });
+      }
+      return;
+    }
+
+    if (queue.length === 0) {
+      clearLiveRuntimeSnapshot();
+    }
+  }, [liveRunId]);
+
+  useEffect(() => {
+    if (!liveRunId) {
+      if (queue.length === 0) {
+        clearLiveRuntimeSnapshot();
+      }
+      return;
+    }
+
+    saveLiveRuntimeSnapshot({ runId: liveRunId, queue });
+  }, [liveRunId, queue]);
 
   const appendNextEvent = useEffectEvent(() => {
     if (!liveRunId || queue.length === 0) return;
@@ -48,30 +102,54 @@ export function useLiveDrain({
   }, [appendNextEvent, liveProjection.phase, liveRunId, queue]);
 
   useEffect(() => {
-    if (liveRunId && queue.length === 0 && liveProjection.phase === "completed") {
-      setLiveRunId(null);
-    }
-  }, [liveProjection.phase, liveRunId, queue.length]);
+    if (!liveSessionId || !liveRunId) return;
 
-  function handleStartRun(task: string, roleIds: string[]): void {
+    if (queue.length === 0 && (
+      liveProjection.phase === "completed" ||
+      liveProjection.phase === "failed" ||
+      liveProjection.phase === "cancelled"
+    )) {
+      markLiveSession(null);
+      clearLiveRuntimeSnapshot();
+    }
+  }, [liveProjection.phase, liveRunId, liveSessionId, markLiveSession, queue.length]);
+
+  function handleStartRun(task: string, roleIds: string[]): boolean {
+    if (!activeSessionId || liveSessionId || activeSessionHasLinkedRun) {
+      return false;
+    }
+
+    const sessionIdAtStart = activeSessionId;
     const scenario = buildRunScenario(task, roleIds);
     commitRunSnapshot(scenario.runId, scenario.initialEvents);
 
-    startTransition(() => {
-      setActiveRunId(scenario.runId);
-      setLiveRunId(scenario.runId);
-      setQueue(scenario.queuedEvents);
-    });
+    attachRunToSession(
+      sessionIdAtStart,
+      scenario.runId,
+      task,
+      roleIds,
+      scenario.initialEvents[scenario.initialEvents.length - 1]?.timestamp ?? new Date().toISOString()
+    );
+    markLiveSession(sessionIdAtStart);
+    setQueue(scenario.queuedEvents);
+    saveLiveRuntimeSnapshot({ runId: scenario.runId, queue: scenario.queuedEvents });
+    return true;
   }
 
-  function handleResolveApproval(decision: "approved" | "rejected"): void {
-    if (!activeRunId) return;
-    const events = runMap[activeRunId] ?? [];
+  function handleResolveApproval(decision: "approved" | "rejected"): boolean {
+    if (!liveSessionId || !liveRunId) return false;
+
+    if (activeSessionId !== liveSessionId) {
+      setActiveSessionId(liveSessionId);
+      return false;
+    }
+
+    const events = runMap[liveRunId] ?? [];
     const projection = projectRun(events);
-    if (projection.approval.status !== "pending") return;
+    if (projection.approval.status !== "pending") return false;
 
     const resolutionEvents = buildApprovalResolutionEvents(
-      activeRunId,
+      liveRunId,
       events.length + 1,
       decision,
       projection.approval.actionLabel
@@ -79,17 +157,18 @@ export function useLiveDrain({
 
     let nextEvents = events;
     for (const event of resolutionEvents) {
-      nextEvents = appendAndPersistRunEvent(activeRunId, event);
+      nextEvents = appendAndPersistRunEvent(liveRunId, event);
     }
 
-    commitRunSnapshot(activeRunId, nextEvents);
+    commitRunSnapshot(liveRunId, nextEvents);
     setQueue([]);
-    setLiveRunId(null);
+    markLiveSession(null);
+    clearLiveRuntimeSnapshot();
+    return true;
   }
 
   return {
     isLive,
-    liveRunId,
     handleStartRun,
     handleResolveApproval
   };

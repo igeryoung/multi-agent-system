@@ -3,15 +3,17 @@
   "active": true,
   "skill": "ralph",
   "keyword": "$ralph",
-  "phase": "executing",
-  "activated_at": "2026-04-02T15:11:18.962Z",
-  "updated_at": "2026-04-02T18:33:20.487Z",
+  "phase": "planning",
+  "activated_at": "2026-04-04T04:27:54.595Z",
+  "updated_at": "2026-04-04T04:27:54.595Z",
   "source": "keyword-detector",
+  "session_id": "",
+  "thread_id": "019d561e-3e29-72d1-8ca4-1144adf44e2f",
+  "turn_id": "019d569e-0b48-72f1-9047-cc8572836d5c",
   "input_lock": {
     "active": false,
     "scope": "deep-interview-auto-approval",
-    "acquired_at": "2026-04-02T12:49:04.268Z",
-    "released_at": "2026-04-02T15:11:18.962Z",
+    "acquired_at": "2026-04-04T01:33:52.684Z",
     "blocked_inputs": [
       "yes",
       "y",
@@ -23,6 +25,7 @@
       "next i should"
     ],
     "message": "Deep interview is active; auto-approval shortcuts are blocked until the interview finishes.",
+    "released_at": "2026-04-04T04:27:54.595Z",
     "exit_reason": "handoff"
   }
 }

@@ -13,22 +13,32 @@ import { MessageSquare } from "lucide-react";
 
 interface ConversationPanelProps {
   messages: ConversationMessage[];
+  task: string;
+  onTaskChange: (task: string) => void;
   onStartRun: (task: string) => void;
   onApprove: () => void;
   onReject: () => void;
   isLive: boolean;
   approvalPending: boolean;
   hasAgents: boolean;
+  taskInputDisabled?: boolean;
+  helperText?: string | null;
+  submitLabel?: string;
 }
 
 export function ConversationPanel({
   messages,
+  task,
+  onTaskChange,
   onStartRun,
   onApprove,
   onReject,
   isLive,
   approvalPending,
-  hasAgents
+  hasAgents,
+  taskInputDisabled,
+  helperText,
+  submitLabel
 }: ConversationPanelProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -38,7 +48,15 @@ export function ConversationPanel({
 
   return (
     <div className="flex flex-col h-full">
-      <TaskInput onStartRun={onStartRun} disabled={isLive} hasAgents={hasAgents} />
+      <TaskInput
+        task={task}
+        onTaskChange={onTaskChange}
+        onStartRun={onStartRun}
+        disabled={taskInputDisabled ?? isLive}
+        hasAgents={hasAgents}
+        helperText={helperText}
+        submitLabel={submitLabel}
+      />
 
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-3">

@@ -24,11 +24,20 @@ vi.mock("@xyflow/react", () => ({
 
 vi.mock("react-resizable-panels", () => ({
   PanelGroup: ({ children, ...props }: Record<string, unknown>) => <div data-testid="panel-group" {...props}>{children as React.ReactNode}</div>,
-  Panel: ({ children, ...props }: Record<string, unknown>) => <div {...props}>{children as React.ReactNode}</div>,
+  Panel: ({ children }: Record<string, unknown>) => <div>{children as React.ReactNode}</div>,
   PanelResizeHandle: () => <div data-testid="resize-handle" />,
   Group: ({ children, ...props }: Record<string, unknown>) => <div {...props}>{children as React.ReactNode}</div>,
   Separator: () => <div />
 }));
+
+function addRole(roleLabel: string) {
+  fireEvent.click(screen.getAllByText(/add agent/i)[0]);
+  fireEvent.click(screen.getByText(roleLabel));
+}
+
+function selectSession(title: string) {
+  fireEvent.click(screen.getByText(title));
+}
 
 describe("App", () => {
   beforeEach(() => {
@@ -38,49 +47,133 @@ describe("App", () => {
 
   afterEach(() => {
     cleanup();
+    vi.clearAllMocks();
     vi.clearAllTimers();
     vi.useRealTimers();
   });
 
-  test("shows the required UI surfaces during a run", async () => {
+  test("creates and restores isolated draft sessions", () => {
     render(<App />);
 
-    // Add agents via canvas first (RolePalette removed from TaskInput)
-    const addButtons = screen.getAllByText(/add agent/i);
-    // Click add agent and select roles
-    fireEvent.click(addButtons[0]);
-    const engineer = screen.getByText("Engineer");
-    fireEvent.click(engineer);
+    const taskInput = screen.getByLabelText(/task/i);
+    expect(taskInput).toHaveValue("");
+    expect(screen.getByText(/no activity yet/i)).toBeInTheDocument();
 
-    fireEvent.click(addButtons[0]);
-    const qa = screen.getByText("QA Tester");
-    fireEvent.click(qa);
+    addRole("Engineer");
+    fireEvent.change(taskInput, { target: { value: "Session alpha task" } });
+    expect(screen.getByTestId("node-count")).toHaveTextContent("1 nodes");
 
-    fireEvent.click(addButtons[0]);
-    const ceo = screen.getByText("CEO Planner");
-    fireEvent.click(ceo);
+    fireEvent.click(screen.getByRole("button", { name: /create session/i }));
+    expect(screen.getByLabelText(/task/i)).toHaveValue("");
+    expect(screen.getByTestId("node-count")).toHaveTextContent("0 nodes");
+
+    addRole("QA Tester");
+    fireEvent.change(screen.getByLabelText(/task/i), { target: { value: "Session beta task" } });
+
+    selectSession("Session 1");
+    expect(screen.getByLabelText(/task/i)).toHaveValue("Session alpha task");
+    expect(screen.getByTestId("node-count")).toHaveTextContent("1 nodes");
+
+    selectSession("Session 2");
+    expect(screen.getByLabelText(/task/i)).toHaveValue("Session beta task");
+    expect(screen.getByTestId("node-count")).toHaveTextContent("1 nodes");
+  });
+
+  test("deletes only the selected non-live session and falls back to the remaining session", () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: /create session/i }));
+    fireEvent.change(screen.getByLabelText(/task/i), { target: { value: "Second session" } });
+
+    expect(screen.getByText("Session 2")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /delete session 2/i }));
+
+    expect(screen.queryByText("Session 2")).not.toBeInTheDocument();
+    expect(screen.getByText("Session 1")).toBeInTheDocument();
+    expect(screen.getByLabelText(/task/i)).toHaveValue("");
+  });
+
+  test("persists inline rename across reload and auto-creates a blank session after deleting the last one", () => {
+    vi.spyOn(window, "confirm").mockReturnValue(true);
+
+    const view = render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: /rename session 1/i }));
+    fireEvent.change(screen.getByLabelText(/session title/i), {
+      target: { value: "Renamed session" }
+    });
+    fireEvent.blur(screen.getByLabelText(/session title/i));
+
+    view.unmount();
+    render(<App />);
+
+    expect(screen.getByText("Renamed session")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText(/task/i), {
+      target: { value: "Temporary task" }
+    });
+    fireEvent.click(screen.getByRole("button", { name: /delete renamed session/i }));
+
+    expect(screen.queryByText("Renamed session")).not.toBeInTheDocument();
+    expect(screen.getByText("Session 1")).toBeInTheDocument();
+    expect(screen.getByLabelText(/task/i)).toHaveValue("");
+    expect(screen.getByText(/no activity yet/i)).toBeInTheDocument();
+  });
+
+  test("restores a run-backed session after switching away and back", async () => {
+    render(<App />);
+
+    addRole("Engineer");
+    addRole("QA Tester");
+    addRole("CEO Planner");
+    fireEvent.change(screen.getByLabelText(/task/i), {
+      target: { value: "Investigate the roadmap." }
+    });
 
     fireEvent.click(screen.getByRole("button", { name: /start dispatch/i }));
+    await vi.advanceTimersByTimeAsync(4200);
 
-    await vi.advanceTimersByTimeAsync(3200);
-
-    expect(screen.getByTestId("flow-graph")).toBeInTheDocument();
-    expect(screen.getByText("Signal Atlas")).toBeInTheDocument();
     expect(screen.getByText(/task received/i)).toBeInTheDocument();
-    expect(screen.getByText(/roles assigned/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/handed work to/i).length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole("button", { name: /create session/i }));
+    expect(screen.getByText(/no activity yet/i)).toBeInTheDocument();
+
+    selectSession("Session 1");
+    expect(screen.getByText(/task received/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/delivered a grounded update/i).length).toBeGreaterThan(0);
   }, 10000);
 
-  test("blocks side effects until the operator approves them", async () => {
+  test("blocks starting another run while one session is live", async () => {
     render(<App />);
 
-    // Add agents
-    const addButtons = screen.getAllByText(/add agent/i);
-    fireEvent.click(addButtons[0]);
-    fireEvent.click(screen.getByText("Engineer"));
-    fireEvent.click(addButtons[0]);
-    fireEvent.click(screen.getByText("QA Tester"));
-    fireEvent.click(addButtons[0]);
-    fireEvent.click(screen.getByText("CEO Planner"));
+    addRole("Engineer");
+    addRole("QA Tester");
+    addRole("CEO Planner");
+    fireEvent.change(screen.getByLabelText(/task/i), {
+      target: { value: "Investigate the roadmap." }
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /start dispatch/i }));
+    await vi.advanceTimersByTimeAsync(800);
+
+    fireEvent.click(screen.getByRole("button", { name: /create session/i }));
+
+    expect(screen.getByRole("button", { name: /another session is live/i })).toBeDisabled();
+    expect(screen.getByText(/is live\. browsing is allowed/i)).toBeInTheDocument();
+  }, 10000);
+
+  test("shows pending approval on the live session and resolves it after reselecting", async () => {
+    render(<App />);
+
+    addRole("Engineer");
+    addRole("QA Tester");
+    addRole("CEO Planner");
+    fireEvent.change(screen.getByLabelText(/task/i), {
+      target: { value: "Plan and publish the release note for the Q2 roadmap." }
+    });
 
     fireEvent.click(screen.getByRole("button", { name: /start dispatch/i }));
 
@@ -88,31 +181,12 @@ describe("App", () => {
       await vi.advanceTimersByTimeAsync(600);
     }
 
-    expect(screen.getByText(/approval required/i)).toBeInTheDocument();
-    expect(screen.getByText(/publish a user-facing deliverable/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /create session/i }));
+    expect(screen.getAllByText(/approval pending/i).length).toBeGreaterThan(0);
 
+    selectSession("Session 1");
     fireEvent.click(screen.getByRole("button", { name: "Approve" }));
 
     expect(screen.getByText(/operator approved/i)).toBeInTheDocument();
-  }, 10000);
-
-  test("displays agent messages in the conversation log", async () => {
-    render(<App />);
-
-    // Add agents
-    const addButtons = screen.getAllByText(/add agent/i);
-    fireEvent.click(addButtons[0]);
-    fireEvent.click(screen.getByText("Engineer"));
-    fireEvent.click(addButtons[0]);
-    fireEvent.click(screen.getByText("QA Tester"));
-    fireEvent.click(addButtons[0]);
-    fireEvent.click(screen.getByText("CEO Planner"));
-
-    fireEvent.click(screen.getByRole("button", { name: /start dispatch/i }));
-
-    await vi.advanceTimersByTimeAsync(4800);
-
-    expect(screen.getAllByText(/handed work to/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/delivered a grounded update/i).length).toBeGreaterThan(0);
   }, 10000);
 });
