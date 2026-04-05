@@ -9,7 +9,8 @@ import {
   toFlowNodes,
   toMessages,
   toPreRunNodes,
-  type AgentNodeData
+  type AgentNodeData,
+  type ConversationMessage
 } from "@/lib/adapters";
 import { AppShell } from "@/components/layout/app-shell";
 import {
@@ -20,8 +21,8 @@ import { FlowGraph } from "@/components/graph/flow-graph";
 import { ConversationPanel } from "@/components/conversation/conversation-panel";
 import { AgentDrawer } from "@/components/graph/agent-drawer";
 import { AddAgentButton } from "@/components/graph/add-agent-button";
-import { getRoleById } from "@/shared/contracts/types";
-import { Plus } from "lucide-react";
+import { getRoleById, HEAD_AGENT, type RoleDefinition } from "@/shared/contracts/types";
+import { Plus, AlertTriangle, X as XIcon } from "lucide-react";
 
 const SESSION_SIDEBAR_VISIBILITY_KEY = "signal-atlas:session-sidebar-visible";
 
@@ -29,6 +30,8 @@ export function App() {
   const runStore = useRunStore();
   const sessionStore = useSessionStore({ runMap: runStore.runMap });
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
+  const [runError, setRunError] = useState<{ key: string; summary: string; diagnostics: string[] } | null>(null);
+  const [dismissedErrorKey, setDismissedErrorKey] = useState<string | null>(null);
   const [isSessionSidebarVisible, setIsSessionSidebarVisible] = useState(() => {
     if (typeof window === "undefined") return true;
     return window.localStorage.getItem(SESSION_SIDEBAR_VISIBILITY_KEY) !== "false";
@@ -42,18 +45,18 @@ export function App() {
   }, [isSessionSidebarVisible]);
 
   const activeSession = sessionStore.activeSession;
-  const activeRunId = activeSession?.linkedRunId ?? null;
+  const activeRunId = activeSession?.linkedRunIds.at(-1) ?? null;
+  const allSessionRunIds = activeSession?.linkedRunIds ?? [];
   const activeEvents = runStore.getRunEvents(activeRunId);
   const projection = runStore.getProjection(activeRunId);
 
   const liveSession = sessionStore.sessions.find(
     (session) => session.sessionId === sessionStore.liveSessionId
   ) ?? null;
-  const liveRunId = liveSession?.linkedRunId ?? null;
+  const liveRunId = liveSession?.linkedRunIds.at(-1) ?? null;
 
-  const { isLive, handleStartRun, handleResolveApproval } = useLiveDrain({
+  const { isLive, isStartingRun, planningTask, startError, debugEntries, handleStartRun, handleCancelRun, handleResolveApproval } = useLiveDrain({
     activeSessionId: sessionStore.activeSessionId,
-    activeSessionHasLinkedRun: Boolean(activeSession?.linkedRunId),
     liveSessionId: sessionStore.liveSessionId,
     liveRunId,
     runMap: runStore.runMap,
@@ -74,7 +77,7 @@ export function App() {
     }
   });
 
-  const isPreRun = !activeSession?.linkedRunId;
+  const isPreRun = (activeSession?.linkedRunIds.length ?? 0) === 0;
   const approvalPending = projection.approval.status === "pending";
   const sourceKey = isPreRun
     ? `draft:${activeSession?.sessionId}:${canvas.roleIds.join(",")}`
@@ -104,25 +107,68 @@ export function App() {
     setSelectedAgentId((previous) => (previous === nodeId ? null : nodeId));
   }, []);
 
-  const handleStartRunWithAgents = useCallback((task: string) => {
-    if (!activeSession || activeSession.linkedRunId) return;
-    handleStartRun(task, canvas.roleIds);
+  const handleStartRunWithAgents = useCallback(async (task: string) => {
+    if (!activeSession) return;
+    await handleStartRun(task, canvas.roleIds);
   }, [activeSession, canvas.roleIds, handleStartRun]);
+
+  useEffect(() => {
+    if (startError) {
+      const errorKey = `start:${startError}`;
+      if (dismissedErrorKey !== errorKey && runError?.key !== errorKey) {
+        setRunError({
+          key: errorKey,
+          summary: "Dispatch failed before the run could start.",
+          diagnostics: [startError, ...debugEntries.flatMap((entry) => entry.details ?? [])].slice(0, 8)
+        });
+      }
+      return;
+    }
+
+    if (!activeRunId || projection.phase !== "failed") {
+      return;
+    }
+
+    const errorKey = `run:${activeRunId}:${projection.lastEventAt}`;
+    if (dismissedErrorKey === errorKey || runError?.key === errorKey) {
+      return;
+    }
+
+    setRunError({
+      key: errorKey,
+      summary: projection.latestSummary || projection.currentDecision || "Run failed.",
+      diagnostics: projection.diagnostics
+    });
+  }, [
+    activeRunId,
+    debugEntries,
+    dismissedErrorKey,
+    projection.currentDecision,
+    projection.diagnostics,
+    projection.lastEventAt,
+    projection.latestSummary,
+    projection.phase,
+    runError,
+    startError
+  ]);
 
   let drawerContent = null;
   if (selectedAgentId) {
     const isDraft = selectedAgentId.startsWith("draft-");
     if (isDraft) {
       const roleId = selectedAgentId.replace("draft-", "");
-      const role = getRoleById(roleId);
+      const isHeadNode = roleId === HEAD_AGENT.id;
+      const agent: RoleDefinition = isHeadNode
+        ? { id: HEAD_AGENT.id, label: HEAD_AGENT.label, responsibility: HEAD_AGENT.responsibility, stepTemplate: "", hue: HEAD_AGENT.hue }
+        : getRoleById(roleId);
       drawerContent = (
         <AgentDrawer
-          agent={role}
+          agent={agent}
           history={[]}
           isLive={isLive}
           isDraft
           onClose={() => setSelectedAgentId(null)}
-          onRemove={() => {
+          onRemove={isHeadNode ? undefined : () => {
             canvas.removeAgent(roleId);
             setSelectedAgentId(null);
           }}
@@ -145,11 +191,37 @@ export function App() {
     }
   }
 
-  const messages = toMessages(projection, activeEvents);
+  const allSessionEvents = allSessionRunIds.flatMap((runId) => runStore.getRunEvents(runId));
+  const messages = toMessages(projection, allSessionEvents);
+
+  if (isStartingRun && planningTask && !activeRunId) {
+    const now = new Date().toISOString();
+    const planningMessages: ConversationMessage[] = [
+      {
+        id: "planning-task",
+        timestamp: now,
+        type: "system",
+        agentId: "system",
+        agentLabel: "Signal Atlas",
+        agentHue: "#6366f1",
+        content: `Task received: ${planningTask}`
+      },
+      {
+        id: "planning-status",
+        timestamp: now,
+        type: "status_change",
+        agentId: HEAD_AGENT.id,
+        agentLabel: HEAD_AGENT.label,
+        agentHue: HEAD_AGENT.hue,
+        content: "Atlas is generating the head plan..."
+      }
+    ];
+    messages.push(...planningMessages);
+  }
   const canStartRun = Boolean(
     activeSession &&
-    !activeSession.linkedRunId &&
     sessionStore.liveSessionId === null &&
+    !isStartingRun &&
     canvas.roleIds.length > 0
   );
 
@@ -160,14 +232,18 @@ export function App() {
       return `${liveSession?.title ?? "Another session"} is live. Browsing is allowed, but starting a new run is blocked until it finishes.`;
     }
 
+    if (startError) {
+      return startError;
+    }
+
+    if (isStartingRun) {
+      return "Atlas is generating the head plan before dispatch begins.";
+    }
+
     if (sessionStore.liveSessionId === activeSession.sessionId) {
       return approvalPending
         ? "This live session is awaiting approval. Resolve it before continuing."
         : "This session is currently live. Starting another run is disabled.";
-    }
-
-    if (activeSession.linkedRunId) {
-      return "This session already owns a run. Create a new session for a new task.";
     }
 
     if (canvas.roleIds.length === 0) {
@@ -182,24 +258,25 @@ export function App() {
       return "Another Session Is Live";
     }
 
-    if (sessionStore.liveSessionId === activeSession?.sessionId) {
-      return approvalPending ? "Approval Required" : "Run In Progress...";
+    if (isStartingRun) {
+      return "Planning In Progress...";
     }
 
-    if (activeSession?.linkedRunId) {
-      return "Session Locked To Run";
+    if (sessionStore.liveSessionId === activeSession?.sessionId) {
+      return approvalPending ? "Approval Required" : "Run In Progress...";
     }
 
     return undefined;
   })();
 
   return (
+    <>
     <AppShell
       isSidebarVisible={isSessionSidebarVisible}
       sessionSidebar={isSessionSidebarVisible ? (
         <SessionSidebar
           sessions={sessionStore.sessions.map((session) => {
-            const sessionProjection = runStore.getProjection(session.linkedRunId);
+            const sessionProjection = runStore.getProjection(session.linkedRunIds.at(-1) ?? null);
             return {
               sessionId: session.sessionId,
               title: session.title,
@@ -207,13 +284,18 @@ export function App() {
               isActive: session.sessionId === sessionStore.activeSessionId,
               isLive: session.sessionId === sessionStore.liveSessionId,
               hasPendingApproval: sessionProjection.approval.status === "pending",
-              isRunBacked: Boolean(session.linkedRunId)
+              isRunBacked: session.linkedRunIds.length > 0
             };
           })}
           onCreateSession={sessionStore.createSession}
           onSelectSession={sessionStore.setActiveSessionId}
           onRenameSession={sessionStore.renameSession}
-          onDeleteSession={sessionStore.deleteSession}
+          onDeleteSession={(sessionId) => {
+              if (sessionId === sessionStore.liveSessionId) {
+                handleCancelRun();
+              }
+              return sessionStore.deleteSession(sessionId, true);
+            }}
           onCollapse={() => setIsSessionSidebarVisible(false)}
         />
       ) : null}
@@ -263,7 +345,12 @@ export function App() {
           onStartRun={handleStartRunWithAgents}
           onApprove={() => handleResolveApproval("approved")}
           onReject={() => handleResolveApproval("rejected")}
+          onCancelRun={handleCancelRun}
           isLive={isLive}
+          isActiveSessionLive={
+            sessionStore.liveSessionId === sessionStore.activeSessionId ||
+            (isStartingRun && sessionStore.liveSessionId === null)
+          }
           approvalPending={approvalPending}
           hasAgents={canvas.roleIds.length > 0}
           taskInputDisabled={!canStartRun}
@@ -272,5 +359,52 @@ export function App() {
         />
       )}
     />
+
+      {runError && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 overflow-hidden">
+            <div className="flex items-center gap-3 px-5 py-4 border-b border-zinc-100">
+              <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
+              <h2 className="text-sm font-semibold text-zinc-900">Run Failed</h2>
+              <button
+                type="button"
+                onClick={() => {
+                  setDismissedErrorKey(runError.key);
+                  setRunError(null);
+                }}
+                className="ml-auto p-1 rounded-md hover:bg-zinc-100 transition-colors"
+              >
+                <XIcon className="w-4 h-4 text-zinc-400" />
+              </button>
+            </div>
+            <div className="px-5 py-4 space-y-3">
+              <p className="text-sm text-zinc-700">{runError.summary}</p>
+              {runError.diagnostics.length > 0 && (
+                <ul className="space-y-1.5">
+                  {runError.diagnostics.map((msg, i) => (
+                    <li key={i} className="text-xs text-zinc-500 flex gap-2">
+                      <span className="text-zinc-300 shrink-0">•</span>
+                      <span>{msg}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div className="px-5 py-3 border-t border-zinc-100 flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setDismissedErrorKey(runError.key);
+                  setRunError(null);
+                }}
+                className="text-xs font-medium text-zinc-600 hover:text-zinc-900 px-3 py-1.5 rounded-md hover:bg-zinc-100 transition-colors"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

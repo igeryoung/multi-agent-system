@@ -1,19 +1,19 @@
 {
   "version": 1,
   "active": true,
-  "skill": "ralph",
-  "keyword": "$ralph",
+  "skill": "cancel",
+  "keyword": "stop",
   "phase": "planning",
-  "activated_at": "2026-04-04T04:27:54.595Z",
-  "updated_at": "2026-04-04T04:27:54.595Z",
+  "activated_at": "2026-04-05T01:54:30.425Z",
+  "updated_at": "2026-04-05T01:54:30.425Z",
   "source": "keyword-detector",
   "session_id": "",
-  "thread_id": "019d561e-3e29-72d1-8ca4-1144adf44e2f",
-  "turn_id": "019d569e-0b48-72f1-9047-cc8572836d5c",
+  "thread_id": "019d573f-52d2-78d0-9c53-2c8c118f01b6",
+  "turn_id": "019d5b56-5bed-7423-b1f3-925e1885ecb6",
   "input_lock": {
     "active": false,
     "scope": "deep-interview-auto-approval",
-    "acquired_at": "2026-04-04T01:33:52.684Z",
+    "acquired_at": "2026-04-04T06:58:11.677Z",
     "blocked_inputs": [
       "yes",
       "y",
@@ -25,7 +25,7 @@
       "next i should"
     ],
     "message": "Deep interview is active; auto-approval shortcuts are blocked until the interview finishes.",
-    "released_at": "2026-04-04T04:27:54.595Z",
+    "released_at": "2026-04-05T01:54:30.425Z",
     "exit_reason": "handoff"
   }
 }

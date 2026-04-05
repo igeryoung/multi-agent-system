@@ -43,6 +43,8 @@ export function AgentDrawer({
   const hue = agent.hue;
   const status = "status" in agent ? agent.status : "idle";
   const responsibility = agent.responsibility;
+  const assignedTaskPacket =
+    "assignedTaskPacket" in agent ? agent.assignedTaskPacket : null;
 
   return (
     <div className="absolute inset-y-0 right-0 z-10 w-[320px] max-w-full bg-white border-l border-zinc-200 shadow-lg flex flex-col animate-in slide-in-from-right duration-200">
@@ -73,6 +75,10 @@ export function AgentDrawer({
 
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
         <p className="text-xs text-muted-foreground">{responsibility}</p>
+
+        {assignedTaskPacket && (
+          <TaskPacketCard packet={assignedTaskPacket} />
+        )}
 
         {history.length > 0 && (
           <div className="space-y-1">
@@ -106,6 +112,56 @@ export function AgentDrawer({
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+function TaskPacketCard({
+  packet
+}: {
+  packet: NonNullable<AgentProjection["assignedTaskPacket"]>;
+}) {
+  return (
+    <div className="space-y-2 rounded-lg border border-zinc-200 bg-zinc-50/70 p-3">
+      <h3 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+        Assigned Task
+      </h3>
+      <TaskPacketRow label="Why" value={packet.why} />
+      <TaskPacketRow label="Goal" value={packet.goal} />
+      <TaskPacketList label="Context" values={packet.context} />
+      <TaskPacketList label="Constraints" values={packet.constraints} />
+      <TaskPacketList label="Done When" values={packet.doneWhen} />
+      <TaskPacketRow label="Next" value={packet.next} />
+      <TaskPacketRow label="Input Source" value={packet.inputSource} />
+      <TaskPacketRow label="Return Policy" value={packet.returnPolicy} />
+    </div>
+  );
+}
+
+function TaskPacketRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="space-y-1">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </p>
+      <p className="text-xs text-foreground whitespace-pre-wrap">{value}</p>
+    </div>
+  );
+}
+
+function TaskPacketList({ label, values }: { label: string; values: string[] }) {
+  return (
+    <div className="space-y-1">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </p>
+      <ul className="space-y-1">
+        {values.map((value) => (
+          <li key={`${label}-${value}`} className="text-xs text-foreground">
+            {value}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

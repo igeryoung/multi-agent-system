@@ -1,4 +1,5 @@
 import {
+  type ExecutionPlan,
   getRoleById,
   HEAD_AGENT,
   type AgentProjection,
@@ -7,7 +8,9 @@ import {
   type OutputProjection,
   type RunEvent,
   type RunProjection,
-  type StepProjection
+  type StepProjection,
+  type TaskPacket,
+  type WorkflowEdge
 } from "../../shared/contracts/types";
 
 function emptyApproval(): ApprovalProjection {
@@ -28,7 +31,8 @@ function createHeadAgent(): AgentProjection {
     hue: HEAD_AGENT.hue,
     responsibility: HEAD_AGENT.responsibility,
     status: "idle",
-    currentTask: "Waiting for a task."
+    currentTask: "Waiting for a task.",
+    assignedTaskPacket: null
   };
 }
 
@@ -42,7 +46,8 @@ function createRoleAgent(roleId: string): AgentProjection {
     hue: role.hue,
     responsibility: role.responsibility,
     status: "idle",
-    currentTask: "Waiting for delegation."
+    currentTask: "Waiting for delegation.",
+    assignedTaskPacket: null
   };
 }
 
@@ -70,6 +75,8 @@ export function projectRun(events: RunEvent[]): RunProjection {
   const steps: StepProjection[] = [];
   const handoffs: HandoffProjection[] = [];
   const outputs: OutputProjection[] = [];
+  const workflowEdges: WorkflowEdge[] = [];
+  const taskPackets: TaskPacket[] = [];
   const diagnostics: string[] = [];
   let approval = emptyApproval();
   let activeAgentId: string = HEAD_AGENT.id;
@@ -103,13 +110,31 @@ export function projectRun(events: RunEvent[]): RunProjection {
         currentDecision = `${roleIds.length} role agents were assigned to the run.`;
         break;
       }
+      case "planning_started": {
+        currentDecision = String(event.payload.summary ?? "Planning in progress...");
+        agents[0].status = "active";
+        agents[0].currentTask = currentDecision;
+        break;
+      }
       case "plan_created": {
-        const plannedSteps = (event.payload.steps as StepProjection[]) ?? [];
+        const executionPlan = event.payload.executionPlan as ExecutionPlan | undefined;
+        const plannedSteps = (executionPlan?.steps ?? event.payload.steps) as StepProjection[] | undefined;
+        const plannedPackets = (executionPlan?.taskPackets ?? event.payload.taskPackets) as TaskPacket[] | undefined;
+        const plannedEdges = (executionPlan?.workflowEdges ?? event.payload.workflowEdges) as WorkflowEdge[] | undefined;
         steps.splice(
           0,
           steps.length,
-          ...plannedSteps.map((step) => ({ ...step, status: "pending" as const }))
+          ...(plannedSteps ?? []).map((step) => ({ ...step, status: "pending" as const }))
         );
+        taskPackets.splice(0, taskPackets.length, ...(plannedPackets ?? []));
+        workflowEdges.splice(0, workflowEdges.length, ...(plannedEdges ?? []));
+        diagnostics.push(...(executionPlan?.diagnostics ?? []));
+        for (const agent of agents) {
+          agent.assignedTaskPacket = taskPackets.find((packet) => packet.agentId === agent.id) ?? null;
+          if (agent.assignedTaskPacket) {
+            agent.currentTask = agent.assignedTaskPacket.goal;
+          }
+        }
         agents[0].status = "active";
         agents[0].currentTask = "Publishing the execution plan";
         activeAgentId = HEAD_AGENT.id;
@@ -216,6 +241,16 @@ export function projectRun(events: RunEvent[]): RunProjection {
         }
         break;
       }
+      case "run_failed": {
+        activeAgentId = HEAD_AGENT.id;
+        agents[0].status = "blocked";
+        agents[0].currentTask = String(event.payload.summary ?? "Run failed.");
+        latestSummary = agents[0].currentTask;
+        currentDecision = latestSummary;
+        const failureDiagnostics = (event.payload.diagnostics as string[] | undefined) ?? [];
+        diagnostics.push(...failureDiagnostics);
+        break;
+      }
       default: {
         diagnostics.push(`Unhandled event type: ${event.eventType}`);
       }
@@ -235,6 +270,8 @@ export function projectRun(events: RunEvent[]): RunProjection {
     agents,
     steps,
     handoffs,
+    workflowEdges,
+    taskPackets,
     approval,
     outputs,
     diagnostics

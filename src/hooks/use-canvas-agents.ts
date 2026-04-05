@@ -1,5 +1,9 @@
 import { useCallback, useMemo } from "react";
-import { PREDEFINED_ROLES, type RoleDefinition } from "@/shared/contracts/types";
+import {
+  PREDEFINED_ROLES,
+  sanitizeRoleIds,
+  type RoleDefinition
+} from "@/shared/contracts/types";
 
 interface UseCanvasAgentsOptions {
   selectedRoleIds: string[];
@@ -10,33 +14,38 @@ export function useCanvasAgents({
   selectedRoleIds,
   onChangeRoleIds
 }: UseCanvasAgentsOptions) {
+  const normalizedRoleIds = useMemo(
+    () => sanitizeRoleIds(selectedRoleIds),
+    [selectedRoleIds]
+  );
+
   const canvasAgents = useMemo(
     () =>
-      selectedRoleIds
+      normalizedRoleIds
         .map((roleId) => PREDEFINED_ROLES.find((role) => role.id === roleId))
         .filter((role): role is RoleDefinition => Boolean(role)),
-    [selectedRoleIds]
+    [normalizedRoleIds]
   );
 
   const addAgent = useCallback((roleId: string): void => {
     onChangeRoleIds(
-      selectedRoleIds.includes(roleId)
-        ? selectedRoleIds
-        : [...selectedRoleIds, roleId]
+      normalizedRoleIds.includes(roleId)
+        ? normalizedRoleIds
+        : [...normalizedRoleIds, roleId]
     );
-  }, [onChangeRoleIds, selectedRoleIds]);
+  }, [normalizedRoleIds, onChangeRoleIds]);
 
   const removeAgent = useCallback((roleId: string): void => {
-    onChangeRoleIds(selectedRoleIds.filter((currentRoleId) => currentRoleId !== roleId));
-  }, [onChangeRoleIds, selectedRoleIds]);
+    onChangeRoleIds(normalizedRoleIds.filter((currentRoleId) => currentRoleId !== roleId));
+  }, [normalizedRoleIds, onChangeRoleIds]);
 
   const reset = useCallback((): void => {
     onChangeRoleIds([]);
   }, [onChangeRoleIds]);
 
   const availableRoles = useMemo(
-    () => PREDEFINED_ROLES.filter((role) => !selectedRoleIds.includes(role.id)),
-    [selectedRoleIds]
+    () => PREDEFINED_ROLES.filter((role) => !normalizedRoleIds.includes(role.id)),
+    [normalizedRoleIds]
   );
 
   return {
@@ -44,7 +53,7 @@ export function useCanvasAgents({
     addAgent,
     removeAgent,
     reset,
-    roleIds: selectedRoleIds,
+    roleIds: normalizedRoleIds,
     availableRoles
   };
 }

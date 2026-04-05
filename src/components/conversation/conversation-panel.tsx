@@ -9,16 +9,20 @@ import {
 } from "./message-bubble";
 import { ApprovalCard } from "./approval-card";
 import { TaskInput } from "./task-input";
+import { PlanCard } from "./plan-card";
+import { RichAgentOutput } from "./rich-agent-output";
 import { MessageSquare } from "lucide-react";
 
 interface ConversationPanelProps {
   messages: ConversationMessage[];
   task: string;
   onTaskChange: (task: string) => void;
-  onStartRun: (task: string) => void;
+  onStartRun: (task: string) => void | Promise<void>;
   onApprove: () => void;
   onReject: () => void;
+  onCancelRun?: () => void;
   isLive: boolean;
+  isActiveSessionLive?: boolean;
   approvalPending: boolean;
   hasAgents: boolean;
   taskInputDisabled?: boolean;
@@ -33,7 +37,9 @@ export function ConversationPanel({
   onStartRun,
   onApprove,
   onReject,
+  onCancelRun,
   isLive,
+  isActiveSessionLive,
   approvalPending,
   hasAgents,
   taskInputDisabled,
@@ -87,7 +93,10 @@ export function ConversationPanel({
         task={task}
         onTaskChange={onTaskChange}
         onStartRun={onStartRun}
+        onCancel={onCancelRun}
         disabled={taskInputDisabled ?? isLive}
+        isLive={isLive}
+        approvalPending={approvalPending}
         hasAgents={hasAgents}
         helperText={helperText}
         submitLabel={submitLabel}
@@ -111,6 +120,8 @@ function MessageRenderer({
     case "system":
     case "plan":
       return <SystemMessage message={message} />;
+    case "plan_detail":
+      return <PlanCard message={message} />;
     case "handoff":
       return <HandoffMessage message={message} />;
     case "status_change":
@@ -126,6 +137,8 @@ function MessageRenderer({
       );
     case "approval_response":
       return <SystemMessage message={message} />;
+    case "agent_output_rich":
+      return <RichAgentOutput message={message} />;
     case "agent_output":
     default:
       return <MessageBubble message={message} />;

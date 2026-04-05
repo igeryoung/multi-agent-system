@@ -154,9 +154,7 @@ export function SessionSidebar({
                         variant="ghost"
                         size="icon-xs"
                         aria-label={`Delete ${session.title}`}
-                        disabled={session.isLive}
                         onClick={() => {
-                          if (session.isLive) return;
                           if (window.confirm(`Delete ${session.title}?`)) {
                             onDeleteSession(session.sessionId);
                           }

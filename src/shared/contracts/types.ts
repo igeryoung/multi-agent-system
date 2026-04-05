@@ -20,11 +20,16 @@ export type EventType =
   | "agent_output_recorded"
   | "blocked_action_requested"
   | "approval_recorded"
-  | "run_completed";
+  | "planning_started"
+  | "run_completed"
+  | "run_failed";
 
 export type AgentStatus = "idle" | "active" | "waiting" | "blocked" | "completed";
 export type StepStatus = "pending" | "in_progress" | "completed" | "blocked";
 export type ApprovalStatus = "idle" | "pending" | "approved" | "rejected";
+export type ReturnPolicy = "final_only" | "blocker_only" | "checkpoint";
+export type WorkflowEdgeKind = "head_handoff" | "peer_handoff";
+export type TaskInputSource = "user_task" | "environment" | "prior_agent_output" | "mixed";
 
 export interface RoleDefinition {
   id: string;
@@ -39,6 +44,41 @@ export interface StepDefinition {
   ownerId: string;
   title: string;
   summary: string;
+  taskPacketId: string;
+  returnPolicy: ReturnPolicy;
+}
+
+export interface TaskPacket {
+  id: string;
+  agentId: string;
+  why: string;
+  goal: string;
+  context: string[];
+  constraints: string[];
+  doneWhen: string[];
+  next: string;
+  inputSource: TaskInputSource;
+  returnPolicy: ReturnPolicy;
+}
+
+export interface WorkflowEdge {
+  id: string;
+  fromAgentId: string;
+  toAgentId: string;
+  kind: WorkflowEdgeKind;
+  note: string;
+  requiresIntermediateReturn: boolean;
+}
+
+export interface ExecutionPlan {
+  plannerMode: "bridge" | "fixture";
+  summary: string;
+  headSummary: string;
+  workflowSummary: string;
+  steps: StepDefinition[];
+  taskPackets: TaskPacket[];
+  workflowEdges: WorkflowEdge[];
+  diagnostics: string[];
 }
 
 export interface RunEvent {
@@ -60,6 +100,7 @@ export interface AgentProjection {
   responsibility: string;
   status: AgentStatus;
   currentTask: string;
+  assignedTaskPacket: TaskPacket | null;
 }
 
 export interface StepProjection extends StepDefinition {
@@ -105,6 +146,8 @@ export interface RunProjection {
   agents: AgentProjection[];
   steps: StepProjection[];
   handoffs: HandoffProjection[];
+  workflowEdges: WorkflowEdge[];
+  taskPackets: TaskPacket[];
   approval: ApprovalProjection;
   outputs: OutputProjection[];
   diagnostics: string[];
@@ -120,7 +163,7 @@ export interface SessionRecord {
   title: string;
   createdAt: string;
   updatedAt: string;
-  linkedRunId: string | null;
+  linkedRunIds: string[];
   draft: SessionDraft;
 }
 
@@ -169,6 +212,26 @@ export const PREDEFINED_ROLES: RoleDefinition[] = [
   }
 ];
 
+const PREDEFINED_ROLE_IDS = new Set(PREDEFINED_ROLES.map((role) => role.id));
+
+export function isKnownRoleId(roleId: string): boolean {
+  return PREDEFINED_ROLE_IDS.has(roleId);
+}
+
+export function sanitizeRoleIds(roleIds: readonly unknown[]): string[] {
+  const uniqueRoleIds = new Set<string>();
+  for (const roleId of roleIds) {
+    if (typeof roleId === "string" && isKnownRoleId(roleId)) {
+      uniqueRoleIds.add(roleId);
+    }
+  }
+  return [...uniqueRoleIds];
+}
+
 export function getRoleById(roleId: string): RoleDefinition {
-  return PREDEFINED_ROLES.find((role) => role.id === roleId) ?? PREDEFINED_ROLES[0];
+  const role = PREDEFINED_ROLES.find((candidate) => candidate.id === roleId);
+  if (!role) {
+    throw new Error(`Unknown role id: ${roleId}`);
+  }
+  return role;
 }

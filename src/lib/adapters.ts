@@ -6,7 +6,7 @@ import type {
   RunEvent,
   RunProjection
 } from "@/shared/contracts/types";
-import { getRoleById, HEAD_AGENT } from "@/shared/contracts/types";
+import { getRoleById, HEAD_AGENT, PREDEFINED_ROLES as AVAILABLE_ROLES } from "@/shared/contracts/types";
 
 export interface AgentNodeData extends Record<string, unknown> {
   label: string;
@@ -41,22 +41,37 @@ export function toFlowNodes(projection: RunProjection): {
     );
   });
 
-  const edges: Edge[] = projection.handoffs.map((handoff) => ({
+  const isTerminal =
+    projection.phase === "completed" ||
+    projection.phase === "failed" ||
+    projection.phase === "cancelled";
+  const isLatestHandoff = (seq: number) =>
+    seq === projection.handoffs[projection.handoffs.length - 1]?.sequence;
+
+  const handoffEdges: Edge[] = projection.handoffs.map((handoff) => ({
     id: handoff.id,
     source: handoff.fromAgentId,
     target: handoff.toAgentId,
-    animated:
-      handoff.sequence ===
-      projection.handoffs[projection.handoffs.length - 1]?.sequence,
+    animated: !isTerminal && isLatestHandoff(handoff.sequence),
     style: {
-      stroke:
-        handoff.sequence ===
-        projection.handoffs[projection.handoffs.length - 1]?.sequence
-          ? "#6366f1"
-          : "#d4d4d8",
+      stroke: isLatestHandoff(handoff.sequence) ? "#6366f1" : "#d4d4d8",
       strokeWidth: 2
     }
   }));
+
+  const plannedEdges: Edge[] = projection.workflowEdges.map((edge) => ({
+    id: edge.id,
+    source: edge.fromAgentId,
+    target: edge.toAgentId,
+    animated: false,
+    style: {
+      stroke: edge.kind === "peer_handoff" ? "#c4b5fd" : "#94a3b8",
+      strokeWidth: 1.5,
+      strokeDasharray: edge.requiresIntermediateReturn ? "8 4" : "4 3"
+    }
+  }));
+
+  const edges = handoffEdges.length > 0 ? handoffEdges : plannedEdges;
 
   if (edges.length === 0 && headAgent) {
     roleAgents.forEach((agent) => {
@@ -99,11 +114,13 @@ function agentToNode(
 export type MessageType =
   | "system"
   | "agent_output"
+  | "agent_output_rich"
   | "handoff"
   | "approval_request"
   | "approval_response"
   | "status_change"
-  | "plan";
+  | "plan"
+  | "plan_detail";
 
 export interface ConversationMessage {
   id: string;
@@ -139,9 +156,7 @@ export function toMessages(
         });
         break;
 
-      case "roles_assigned": {
-        const roleIds = (event.payload.roleIds as string[]) ?? [];
-        const roleNames = roleIds.map((id) => getRoleById(id).label);
+      case "roles_assigned":
         messages.push({
           id: `${event.runId}-${event.sequence}`,
           timestamp: event.timestamp,
@@ -149,22 +164,43 @@ export function toMessages(
           agentId: "system",
           agentLabel: "Signal Atlas",
           agentHue: "#6366f1",
-          content: `Roles assigned: ${roleNames.join(", ")}`
+          content: `Roles assigned: ${String((event.payload.roleIds as string[] | undefined)?.length ?? 0)}`
         });
         break;
-      }
 
-      case "plan_created":
+      case "planning_started":
         messages.push({
           id: `${event.runId}-${event.sequence}`,
           timestamp: event.timestamp,
-          type: "plan",
+          type: "status_change",
           agentId: HEAD_AGENT.id,
           agentLabel: HEAD_AGENT.label,
           agentHue: HEAD_AGENT.hue,
-          content: String(event.payload.summary ?? "Plan created.")
+          content: String(event.payload.summary ?? "Atlas is preparing the head plan...")
         });
         break;
+
+      case "plan_created": {
+        const planPayload = event.payload;
+        messages.push({
+          id: `${event.runId}-${event.sequence}`,
+          timestamp: event.timestamp,
+          type: "plan_detail",
+          agentId: HEAD_AGENT.id,
+          agentLabel: HEAD_AGENT.label,
+          agentHue: HEAD_AGENT.hue,
+          content: String(planPayload.summary ?? "Plan created."),
+          metadata: {
+            summary: planPayload.summary,
+            headSummary: planPayload.headSummary,
+            workflowSummary: planPayload.workflowSummary,
+            steps: planPayload.steps,
+            taskPackets: planPayload.taskPackets,
+            workflowEdges: planPayload.workflowEdges
+          }
+        });
+        break;
+      }
 
       case "handoff_requested":
         messages.push({
@@ -194,17 +230,20 @@ export function toMessages(
         });
         break;
 
-      case "agent_output_recorded":
+      case "agent_output_recorded": {
+        const structured = event.payload.structuredOutput as Record<string, unknown> | undefined;
         messages.push({
           id: `${event.runId}-${event.sequence}`,
           timestamp: event.timestamp,
-          type: "agent_output",
+          type: structured ? "agent_output_rich" : "agent_output",
           agentId,
           agentLabel: agentInfo.label,
           agentHue: agentInfo.hue,
-          content: String(event.payload.output ?? event.payload.summary ?? "")
+          content: String(event.payload.output ?? event.payload.summary ?? ""),
+          metadata: structured ? { structuredOutput: structured } : undefined
         });
         break;
+      }
 
       case "blocked_action_requested":
         messages.push({
@@ -247,6 +286,18 @@ export function toMessages(
           content: String(event.payload.summary ?? "Run completed.")
         });
         break;
+
+      case "run_failed":
+        messages.push({
+          id: `${event.runId}-${event.sequence}`,
+          timestamp: event.timestamp,
+          type: "agent_output",
+          agentId: HEAD_AGENT.id,
+          agentLabel: HEAD_AGENT.label,
+          agentHue: HEAD_AGENT.hue,
+          content: String(event.payload.summary ?? "Run failed.")
+        });
+        break;
     }
   }
 
@@ -261,8 +312,11 @@ function resolveAgent(
   if (agent) return { label: agent.label, hue: agent.hue };
   if (actorId === HEAD_AGENT.id)
     return { label: HEAD_AGENT.label, hue: HEAD_AGENT.hue };
-  const role = getRoleById(actorId);
-  return { label: role.label, hue: role.hue };
+  const role = AVAILABLE_ROLES.find((candidate) => candidate.id === actorId);
+  if (role) {
+    return { label: role.label, hue: role.hue };
+  }
+  return { label: actorId, hue: "#6366f1" };
 }
 
 export interface AgentHistoryItem {
@@ -336,21 +390,49 @@ export function toPreRunNodes(canvasAgents: RoleDefinition[]): {
   const totalWidth = (canvasAgents.length - 1) * spacing;
   const startX = -totalWidth / 2;
 
-  const nodes: Node<AgentNodeData>[] = canvasAgents.map((role, index) => ({
-    id: `draft-${role.id}`,
-    type: "agentNode",
-    position: { x: startX + index * spacing, y: 0 },
-    data: {
-      label: role.label,
-      role: role.label,
-      responsibility: role.responsibility,
-      status: "idle" as AgentStatus,
-      hue: role.hue,
-      currentTask: role.responsibility,
-      isActive: false,
-      kind: "role" as const
+  const nodes: Node<AgentNodeData>[] = [
+    {
+      id: `draft-${HEAD_AGENT.id}`,
+      type: "agentNode",
+      position: { x: 0, y: 0 },
+      data: {
+        label: HEAD_AGENT.label,
+        role: "Head Agent",
+        responsibility: HEAD_AGENT.responsibility,
+        status: "idle" as AgentStatus,
+        hue: HEAD_AGENT.hue,
+        currentTask: HEAD_AGENT.responsibility,
+        isActive: false,
+        kind: "head" as const
+      }
     }
+  ];
+
+  canvasAgents.forEach((role, index) => {
+    nodes.push({
+      id: `draft-${role.id}`,
+      type: "agentNode",
+      position: { x: startX + index * spacing, y: 180 },
+      data: {
+        label: role.label,
+        role: role.label,
+        responsibility: role.responsibility,
+        status: "idle" as AgentStatus,
+        hue: role.hue,
+        currentTask: role.responsibility,
+        isActive: false,
+        kind: "role" as const
+      }
+    });
+  });
+
+  const edges: Edge[] = canvasAgents.map((role) => ({
+    id: `draft-edge-${role.id}`,
+    source: `draft-${HEAD_AGENT.id}`,
+    target: `draft-${role.id}`,
+    animated: false,
+    style: { stroke: "#e4e4e7", strokeWidth: 1.5, strokeDasharray: "6 3" }
   }));
 
-  return { nodes, edges: [] };
+  return { nodes, edges };
 }

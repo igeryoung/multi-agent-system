@@ -25,7 +25,7 @@ function createBlankSession(index: number): SessionRecord {
     title: `Session ${index}`,
     createdAt: timestamp,
     updatedAt: timestamp,
-    linkedRunId: null,
+    linkedRunIds: [],
     draft: {
       taskInput: "",
       selectedRoleIds: []
@@ -51,11 +51,14 @@ function resolveLiveSessionId(
   runMap: Record<string, RunEvent[]>
 ): string | null {
   const candidates = sessions
-    .filter((session) => session.linkedRunId && runMap[session.linkedRunId])
-    .map((session) => ({
-      session,
-      projection: projectRun(runMap[session.linkedRunId as string] ?? [])
-    }))
+    .filter((session) => {
+      const lastRunId = session.linkedRunIds.at(-1);
+      return lastRunId && runMap[lastRunId];
+    })
+    .map((session) => {
+      const lastRunId = session.linkedRunIds.at(-1) as string;
+      return { session, projection: projectRun(runMap[lastRunId] ?? []) };
+    })
     .filter(({ projection }) => !isTerminalPhase(projection.phase))
     .sort((left, right) => {
       const byRun = right.projection.lastEventAt.localeCompare(left.projection.lastEventAt);
@@ -77,9 +80,10 @@ function applyActivityUpdates(
   let changed = false;
 
   const nextSessions = sessions.map((session) => {
-    if (!session.linkedRunId) return session;
+    const lastRunId = session.linkedRunIds.at(-1);
+    if (!lastRunId) return session;
 
-    const events = runMap[session.linkedRunId];
+    const events = runMap[lastRunId];
     if (!events || events.length === 0) return session;
 
     const projection = projectRun(events);
@@ -213,11 +217,11 @@ export function useSessionStore({ runMap }: UseSessionStoreOptions) {
       const nextSessions = sortSessionsByUpdatedAt(
         previous.map((session) =>
           session.sessionId === sessionId
-            ? session.linkedRunId && session.linkedRunId !== runId
+            ? session.linkedRunIds.includes(runId)
               ? session
               : {
                   ...session,
-                  linkedRunId: runId,
+                  linkedRunIds: [...session.linkedRunIds, runId],
                   updatedAt,
                   draft: {
                     taskInput,
@@ -232,8 +236,8 @@ export function useSessionStore({ runMap }: UseSessionStoreOptions) {
     });
   }, []);
 
-  const deleteSession = useCallback((sessionId: string) => {
-    if (sessionId === liveSessionId) {
+  const deleteSession = useCallback((sessionId: string, force = false) => {
+    if (sessionId === liveSessionId && !force) {
       return false;
     }
 

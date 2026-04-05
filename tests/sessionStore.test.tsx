@@ -10,8 +10,8 @@ describe("useSessionStore", () => {
     localStorage.clear();
   });
 
-  test("bootstraps one run-backed session per legacy run and rehydrates live ownership", () => {
-    const scenario = buildRunScenario("Investigate the roadmap.", ["engineer"]);
+  test("bootstraps one run-backed session per legacy run and rehydrates live ownership", async () => {
+    const scenario = await buildRunScenario("Investigate the roadmap.", ["engineer"]);
     const runMap: Record<string, RunEvent[]> = {
       [scenario.runId]: scenario.initialEvents
     };
@@ -20,7 +20,7 @@ describe("useSessionStore", () => {
     const { result } = renderHook(() => useSessionStore({ runMap }));
 
     expect(result.current.sessions).toHaveLength(1);
-    expect(result.current.activeSession?.linkedRunId).toBe(scenario.runId);
+    expect(result.current.activeSession?.linkedRunIds).toContain(scenario.runId);
     expect(result.current.liveSessionId).toBe(result.current.activeSession?.sessionId);
   });
 
@@ -68,9 +68,9 @@ describe("useSessionStore", () => {
     expect(result.current.activeSessionId).toBe(firstSessionId);
   });
 
-  test("rehydrates the live session deterministically when multiple runs are nonterminal", () => {
-    const first = buildRunScenario("Investigate alpha.", ["engineer"]);
-    const second = buildRunScenario("Investigate beta.", ["qa"]);
+  test("rehydrates the live session deterministically when multiple runs are nonterminal", async () => {
+    const first = await buildRunScenario("Investigate alpha.", ["engineer"]);
+    const second = await buildRunScenario("Investigate beta.", ["qa"]);
     const timestamp = "2026-04-04T00:00:00.000Z";
 
     const firstEvents = first.initialEvents.map((event) => ({ ...event, timestamp }));
@@ -84,7 +84,7 @@ describe("useSessionStore", () => {
         title: "Session A",
         createdAt: timestamp,
         updatedAt: "2026-04-04T00:00:01.000Z",
-        linkedRunId: first.runId,
+        linkedRunIds: [first.runId],
         draft: { taskInput: "", selectedRoleIds: [] }
       },
       {
@@ -92,7 +92,7 @@ describe("useSessionStore", () => {
         title: "Session B",
         createdAt: timestamp,
         updatedAt: "2026-04-04T00:00:02.000Z",
-        linkedRunId: second.runId,
+        linkedRunIds: [second.runId],
         draft: { taskInput: "", selectedRoleIds: [] }
       }
     ]);
@@ -107,7 +107,7 @@ describe("useSessionStore", () => {
     expect(result.current.liveSessionId).toBe("session-b");
   });
 
-  test("does not overwrite a session that is already linked to a different run", () => {
+  test("appends multiple runs to the same session for chat-like history", () => {
     const { result } = renderHook(() => useSessionStore({ runMap: {} }));
     const session = result.current.activeSession;
     expect(session).not.toBeNull();
@@ -132,7 +132,27 @@ describe("useSessionStore", () => {
       );
     });
 
-    expect(result.current.activeSession?.linkedRunId).toBe("run-a");
-    expect(result.current.activeSession?.draft.taskInput).toBe("First task");
+    expect(result.current.activeSession?.linkedRunIds).toEqual(["run-a", "run-b"]);
+    expect(result.current.activeSession?.draft.taskInput).toBe("Second task");
+  });
+
+  test("sanitizes invalid persisted role ids from session drafts", () => {
+    saveSessions([
+      {
+        sessionId: "session-invalid",
+        title: "Session Invalid",
+        createdAt: "2026-04-04T00:00:00.000Z",
+        updatedAt: "2026-04-04T00:00:00.000Z",
+        linkedRunIds: [],
+        draft: {
+          taskInput: "Draft task",
+          selectedRoleIds: ["engineer", "not-a-real-role"]
+        }
+      }
+    ]);
+
+    const { result } = renderHook(() => useSessionStore({ runMap: {} }));
+
+    expect(result.current.activeSession?.draft.selectedRoleIds).toEqual(["engineer"]);
   });
 });

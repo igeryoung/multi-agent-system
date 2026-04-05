@@ -1,12 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Play } from "lucide-react";
+import { Play, Square } from "lucide-react";
 
 interface TaskInputProps {
   task: string;
   onTaskChange: (task: string) => void;
-  onStartRun: (task: string) => void;
+  onStartRun: (task: string) => void | Promise<void>;
+  onCancel?: () => void;
   disabled?: boolean;
+  isLive?: boolean;
+  approvalPending?: boolean;
   hasAgents: boolean;
   helperText?: string | null;
   submitLabel?: string;
@@ -16,7 +19,10 @@ export function TaskInput({
   task,
   onTaskChange,
   onStartRun,
+  onCancel,
   disabled,
+  isLive,
+  approvalPending,
   hasAgents,
   helperText,
   submitLabel
@@ -25,8 +31,10 @@ export function TaskInput({
 
   function handleSubmit(): void {
     if (task.trim().length === 0) return;
-    onStartRun(task.trim());
+    void onStartRun(task.trim());
   }
+
+  const showStopButton = isLive && !approvalPending && onCancel;
 
   return (
     <div className="p-4 border-t border-zinc-100">
@@ -57,14 +65,25 @@ export function TaskInput({
             Add agents on the canvas using the + button before starting.
           </p>
         ) : null}
-        <Button
-          onClick={handleSubmit}
-          disabled={disabled || task.trim().length === 0 || !hasAgents}
-          className="w-full"
-        >
-          <Play className="w-4 h-4 mr-2" />
-          {submitLabel ?? (disabled ? "Run in progress..." : "Start Dispatch")}
-        </Button>
+        {showStopButton ? (
+          <Button
+            onClick={onCancel}
+            variant="destructive"
+            className="w-full"
+          >
+            <Square className="w-4 h-4 mr-2" />
+            Stop Run
+          </Button>
+        ) : (
+          <Button
+            onClick={handleSubmit}
+            disabled={disabled || task.trim().length === 0 || !hasAgents}
+            className="w-full"
+          >
+            <Play className="w-4 h-4 mr-2" />
+            {submitLabel ?? (disabled ? "Run in progress..." : "Start Dispatch")}
+          </Button>
+        )}
       </div>
     </div>
   );

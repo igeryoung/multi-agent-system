@@ -1,0 +1,32 @@
+# Deep Interview Context Snapshot
+
+- Task statement: Define the next version after v1 so the app moves from a scripted demo into real agent usage with explicit work division.
+- Desired outcome: A clarified spec for how a head node should partition tasks, assign subtasks to available agents, and standardize each subtask with a context-engineering payload.
+- Stated solution: User assigns a task to the head node; only the head node communicates with the user; the head node inspects available agents plus their descriptions in the current environment, creates a task pipeline, and assigns subtasks; each subtask should carry Goal, Context, Constraints, Done when, and Next.
+- Probable intent hypothesis: Replace the current fake orchestration with a real coordination model that can later drive actual agent execution while preserving a single operator-facing control surface.
+- Known facts/evidence:
+  - `src/shared/contracts/types.ts` defines one `head` agent kind and multiple `role` agents with fixed responsibilities.
+  - `src/server/orchestrator/scenario.ts` currently scripts the run by generating steps from selected role IDs and synthetic outputs, not by calling real agents.
+  - `src/server/events/projectRun.ts` projects a run from events and already models plan creation, handoffs, agent outputs, approvals, and final head-agent summaries.
+  - `src/lib/adapters.ts` converts those events into graph nodes, handoff edges, and conversation messages where the head agent remains the main visible narrator.
+  - `src/hooks/use-live-drain.ts` drives a timed queue of prebuilt events, so the current runtime is replay-based rather than execution-based.
+- Constraints:
+  - Brownfield React/TypeScript app.
+  - Existing head-agent communication pattern likely should be preserved unless clarified otherwise.
+  - Existing run/event model may be reused or expanded instead of replaced.
+- Unknowns/open questions:
+  - Is v2 limited to designing the orchestration contract, or should it execute real Codex native subagents/OMX agents now?
+  - How dynamic should agent discovery be: only canvas-selected roles, all known repo agents, or runtime-discovered agents from another source?
+  - Should role agents communicate only with head, or can they hand off laterally agent-to-agent?
+  - Is the context-engineering packet only for internal orchestration, or also something the user can inspect?
+  - What does success look like for the first real version: architecture/spec only, local simulation with richer packets, or end-to-end real delegation?
+- Decision-boundary unknowns:
+  - What OMX may decide automatically about task partitioning granularity.
+  - Whether the existing event schema may change.
+  - Whether real agent execution is in scope now or deferred.
+- Likely codebase touchpoints:
+  - `src/shared/contracts/types.ts`
+  - `src/server/orchestrator/scenario.ts`
+  - `src/server/events/projectRun.ts`
+  - `src/hooks/use-live-drain.ts`
+  - `src/lib/adapters.ts`

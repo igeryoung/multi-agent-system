@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1775282859655,
+  "lastScanned": 1775396854359,
   "projectRoot": "/Users/yangping/Studio/side-project/multi-agent-system",
   "techStack": {
     "languages": [
@@ -55,6 +55,7 @@
       "dev": "vite",
       "build": "tsc -p tsconfig.json && vite build",
       "preview": "vite preview",
+      "planner:bridge": "node scripts/head-planner-bridge.mjs",
       "test": "vitest run",
       "test:watch": "vitest",
       "check": "tsc -p tsconfig.json --noEmit"
@@ -70,6 +71,7 @@
     "isMonorepo": false,
     "workspaces": [],
     "mainDirectories": [
+      "scripts",
       "src",
       "tests"
     ],
@@ -81,16 +83,35 @@
       "path": "dist",
       "purpose": "Distribution/build output",
       "fileCount": 1,
-      "lastAccessed": 1775282859642,
+      "lastAccessed": 1775396854348,
       "keyFiles": [
         "index.html"
+      ]
+    },
+    "reports": {
+      "path": "reports",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1775396854348,
+      "keyFiles": [
+        "head-planner-dispatch-error-report-2026-04-05.md"
+      ]
+    },
+    "scripts": {
+      "path": "scripts",
+      "purpose": "Build/utility scripts",
+      "fileCount": 2,
+      "lastAccessed": 1775396854348,
+      "keyFiles": [
+        "head-planner-bridge.mjs",
+        "head-planner-runner.mjs"
       ]
     },
     "src": {
       "path": "src",
       "purpose": "Source code",
       "fileCount": 3,
-      "lastAccessed": 1775282859642,
+      "lastAccessed": 1775396854348,
       "keyFiles": [
         "index.css",
         "main.tsx",
@@ -100,30 +121,31 @@
     "tests": {
       "path": "tests",
       "purpose": "Test files",
-      "fileCount": 4,
-      "lastAccessed": 1775282859644,
+      "fileCount": 6,
+      "lastAccessed": 1775396854348,
       "keyFiles": [
+        "agentDrawer.test.tsx",
         "app.test.tsx",
+        "headPlanner.test.ts",
         "projectRun.test.ts",
-        "sessionStore.test.tsx",
-        "setup.ts"
+        "sessionStore.test.tsx"
       ]
     },
     "dist/assets": {
       "path": "dist/assets",
       "purpose": "Static assets",
       "fileCount": 2,
-      "lastAccessed": 1775282859645,
+      "lastAccessed": 1775396854349,
       "keyFiles": [
-        "index-BGEHpugZ.css",
-        "index-K_Nm2o-o.js"
+        "index-BbvFgeM0.css",
+        "index-DoWL9nqX.js"
       ]
     },
     "src/app": {
       "path": "src/app",
       "purpose": "Application code",
       "fileCount": 1,
-      "lastAccessed": 1775282859645,
+      "lastAccessed": 1775396854349,
       "keyFiles": [
         "App.tsx"
       ]
@@ -132,14 +154,14 @@
       "path": "src/components",
       "purpose": "UI components",
       "fileCount": 0,
-      "lastAccessed": 1775282859645,
+      "lastAccessed": 1775396854349,
       "keyFiles": []
     },
     "src/lib": {
       "path": "src/lib",
       "purpose": "Library code",
       "fileCount": 2,
-      "lastAccessed": 1775282859645,
+      "lastAccessed": 1775396854349,
       "keyFiles": [
         "adapters.ts",
         "utils.ts"
@@ -149,104 +171,146 @@
   "hotPaths": [
     {
       "path": "src/app/App.tsx",
-      "accessCount": 28,
-      "lastAccessed": 1775283633175,
+      "accessCount": 80,
+      "lastAccessed": 1775403690699,
       "type": "file"
-    },
-    {
-      "path": "src/components/graph/flow-graph.tsx",
-      "accessCount": 21,
-      "lastAccessed": 1775283761495,
-      "type": "file"
-    },
-    {
-      "path": "src/components/layout/app-shell.tsx",
-      "accessCount": 18,
-      "lastAccessed": 1775283606055,
-      "type": "file"
-    },
-    {
-      "path": "",
-      "accessCount": 16,
-      "lastAccessed": 1775283071056,
-      "type": "directory"
     },
     {
       "path": "src/components/conversation/conversation-panel.tsx",
-      "accessCount": 15,
-      "lastAccessed": 1775283644799,
+      "accessCount": 39,
+      "lastAccessed": 1775404154759,
       "type": "file"
     },
     {
-      "path": "src",
-      "accessCount": 14,
-      "lastAccessed": 1775263502580,
-      "type": "directory"
-    },
-    {
-      "path": "src/components/graph/agent-node.tsx",
-      "accessCount": 14,
-      "lastAccessed": 1775283084474,
-      "type": "file"
-    },
-    {
-      "path": "tests/app.test.tsx",
-      "accessCount": 13,
-      "lastAccessed": 1775263458065,
+      "path": "src/hooks/use-live-drain.ts",
+      "accessCount": 35,
+      "lastAccessed": 1775404143933,
       "type": "file"
     },
     {
       "path": "src/lib/adapters.ts",
-      "accessCount": 12,
-      "lastAccessed": 1775282947909,
-      "type": "file"
-    },
-    {
-      "path": "src/components/conversation/task-input.tsx",
-      "accessCount": 12,
-      "lastAccessed": 1775283576882,
+      "accessCount": 30,
+      "lastAccessed": 1775400258651,
       "type": "file"
     },
     {
       "path": "src/shared/contracts/types.ts",
-      "accessCount": 11,
-      "lastAccessed": 1775282944003,
+      "accessCount": 27,
+      "lastAccessed": 1775401088181,
       "type": "file"
     },
     {
-      "path": "package.json",
-      "accessCount": 9,
-      "lastAccessed": 1775282967547,
+      "path": "tests/app.test.tsx",
+      "accessCount": 26,
+      "lastAccessed": 1775404186292,
       "type": "file"
     },
     {
       "path": "src/server/orchestrator/scenario.ts",
-      "accessCount": 8,
-      "lastAccessed": 1775226336008,
+      "accessCount": 25,
+      "lastAccessed": 1775401218822,
+      "type": "file"
+    },
+    {
+      "path": "src/components/graph/flow-graph.tsx",
+      "accessCount": 24,
+      "lastAccessed": 1775366532376,
+      "type": "file"
+    },
+    {
+      "path": "src",
+      "accessCount": 23,
+      "lastAccessed": 1775366546162,
+      "type": "directory"
+    },
+    {
+      "path": "src/components/conversation/task-input.tsx",
+      "accessCount": 23,
+      "lastAccessed": 1775398738212,
+      "type": "file"
+    },
+    {
+      "path": "",
+      "accessCount": 22,
+      "lastAccessed": 1775366549140,
+      "type": "directory"
+    },
+    {
+      "path": "src/server/events/storage.ts",
+      "accessCount": 21,
+      "lastAccessed": 1775404385827,
+      "type": "file"
+    },
+    {
+      "path": "src/components/layout/app-shell.tsx",
+      "accessCount": 19,
+      "lastAccessed": 1775366537371,
       "type": "file"
     },
     {
       "path": "src/server/events/projectRun.ts",
-      "accessCount": 8,
-      "lastAccessed": 1775282950463,
+      "accessCount": 18,
+      "lastAccessed": 1775403016367,
+      "type": "file"
+    },
+    {
+      "path": "src/components/graph/agent-node.tsx",
+      "accessCount": 15,
+      "lastAccessed": 1775366539688,
+      "type": "file"
+    },
+    {
+      "path": "src/hooks/use-session-store.ts",
+      "accessCount": 14,
+      "lastAccessed": 1775403655300,
+      "type": "file"
+    },
+    {
+      "path": "package.json",
+      "accessCount": 12,
+      "lastAccessed": 1775315787309,
+      "type": "file"
+    },
+    {
+      "path": "src/server/orchestrator/head-planner.ts",
+      "accessCount": 11,
+      "lastAccessed": 1775401188594,
+      "type": "file"
+    },
+    {
+      "path": "vite.config.ts",
+      "accessCount": 10,
+      "lastAccessed": 1775315795455,
+      "type": "file"
+    },
+    {
+      "path": "src/components/graph/agent-drawer.tsx",
+      "accessCount": 10,
+      "lastAccessed": 1775366532138,
+      "type": "file"
+    },
+    {
+      "path": "src/components/conversation/approval-card.tsx",
+      "accessCount": 10,
+      "lastAccessed": 1775366669312,
+      "type": "file"
+    },
+    {
+      "path": "src/hooks/use-run-store.ts",
+      "accessCount": 10,
+      "lastAccessed": 1775397814324,
+      "type": "file"
+    },
+    {
+      "path": "src/hooks/use-canvas-agents.ts",
+      "accessCount": 9,
+      "lastAccessed": 1775397858245,
       "type": "file"
     },
     {
       "path": "src/main.tsx",
       "accessCount": 8,
       "lastAccessed": 1775282956025,
-      "type": "file"
-    },
-    {
-      "path": "vite.config.ts",
-      "accessCount": 8,
-      "lastAccessed": 1775282960073,
-      "type": "file"
-    },
-    {
-      "path": "src/components/graph/agent-drawer.tsx",
-      "accessCount": 8,
-      "lastAccessed": 1775283597030,
       "type": "file"
     },
     {
@@ -262,39 +326,21 @@
       "type": "file"
     },
     {
-      "path": "src/server/events/storage.ts",
+      "path": "src/components/layout/session-sidebar.tsx",
       "accessCount": 7,
-      "lastAccessed": 1775282947865,
-      "type": "file"
-    },
-    {
-      "path": "src/hooks/use-canvas-agents.ts",
-      "accessCount": 7,
-      "lastAccessed": 1775282950165,
-      "type": "file"
-    },
-    {
-      "path": "src/components/conversation/approval-card.tsx",
-      "accessCount": 7,
-      "lastAccessed": 1775283585853,
-      "type": "file"
-    },
-    {
-      "path": "src/hooks/use-run-store.ts",
-      "accessCount": 6,
-      "lastAccessed": 1775282944487,
-      "type": "file"
-    },
-    {
-      "path": "src/hooks/use-live-drain.ts",
-      "accessCount": 6,
-      "lastAccessed": 1775282950107,
+      "lastAccessed": 1775403668405,
       "type": "file"
     },
     {
       "path": "tests/projectRun.test.ts",
-      "accessCount": 5,
-      "lastAccessed": 1775226325670,
+      "accessCount": 6,
+      "lastAccessed": 1775314326796,
+      "type": "file"
+    },
+    {
+      "path": "src/components/conversation/message-bubble.tsx",
+      "accessCount": 6,
+      "lastAccessed": 1775366659539,
       "type": "file"
     },
     {
@@ -316,12 +362,6 @@
       "type": "file"
     },
     {
-      "path": "src/components/layout/session-sidebar.tsx",
-      "accessCount": 4,
-      "lastAccessed": 1775283078548,
-      "type": "file"
-    },
-    {
       "path": "tests/setup.ts",
       "accessCount": 3,
       "lastAccessed": 1775183455086,
@@ -334,15 +374,21 @@
       "type": "file"
     },
     {
-      "path": "components.json",
-      "accessCount": 2,
-      "lastAccessed": 1775282941037,
+      "path": "scripts/head-planner-bridge.mjs",
+      "accessCount": 3,
+      "lastAccessed": 1775315789679,
       "type": "file"
     },
     {
-      "path": "src/components/conversation/message-bubble.tsx",
+      "path": "scripts/head-planner-runner.mjs",
+      "accessCount": 3,
+      "lastAccessed": 1775315790094,
+      "type": "file"
+    },
+    {
+      "path": "components.json",
       "accessCount": 2,
-      "lastAccessed": 1775282948598,
+      "lastAccessed": 1775282941037,
       "type": "file"
     },
     {
@@ -350,6 +396,24 @@
       "accessCount": 2,
       "lastAccessed": 1775283099498,
       "type": "file"
+    },
+    {
+      "path": "src/shared",
+      "accessCount": 2,
+      "lastAccessed": 1775285150095,
+      "type": "directory"
+    },
+    {
+      "path": "tests/headPlanner.test.ts",
+      "accessCount": 2,
+      "lastAccessed": 1775314421798,
+      "type": "file"
+    },
+    {
+      "path": "tests",
+      "accessCount": 2,
+      "lastAccessed": 1775371115539,
+      "type": "directory"
     },
     {
       "path": ".omx/plans/test-spec-multi-agent-system-app.md",
@@ -373,24 +437,6 @@
       "path": "src/lib/utils.ts",
       "accessCount": 1,
       "lastAccessed": 1775201207901,
-      "type": "file"
-    },
-    {
-      "path": "tests",
-      "accessCount": 1,
-      "lastAccessed": 1775226349107,
-      "type": "directory"
-    },
-    {
-      "path": "src/shared",
-      "accessCount": 1,
-      "lastAccessed": 1775263456761,
-      "type": "directory"
-    },
-    {
-      "path": "src/hooks/use-session-store.ts",
-      "accessCount": 1,
-      "lastAccessed": 1775282944219,
       "type": "file"
     },
     {

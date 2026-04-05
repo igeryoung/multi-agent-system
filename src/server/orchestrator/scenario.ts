@@ -1,17 +1,31 @@
 import {
+  type ExecutionPlan,
   getRoleById,
   HEAD_AGENT,
   type ActorType,
   type EventType,
   type RunEvent,
   type RunPhase,
-  type StepDefinition
+  type WorkflowEdge
 } from "../../shared/contracts/types";
+import {
+  createHeadPlan,
+  detectHeadPlannerMode,
+  type HeadPlannerMode
+} from "./head-planner";
 
 interface ScenarioBundle {
   runId: string;
   initialEvents: RunEvent[];
   queuedEvents: RunEvent[];
+}
+
+interface BuildRunScenarioOptions {
+  cwd?: string;
+  plannerMode?: HeadPlannerMode;
+  signal?: AbortSignal;
+  onInitialEvents?: (payload: { runId: string; initialEvents: RunEvent[] }) => void;
+  onPlanningEvent?: (event: RunEvent) => void;
 }
 
 interface ApprovalIntent {
@@ -85,25 +99,17 @@ function inferApprovalIntent(task: string): ApprovalIntent | null {
   };
 }
 
-function buildSteps(task: string, roleIds: string[]): StepDefinition[] {
-  return roleIds.map((roleId, index) => {
-    const role = getRoleById(roleId);
-    return {
-      id: `step-${index + 1}`,
-      ownerId: role.id,
-      title: `${role.label}: ${role.stepTemplate}`,
-      summary: `${role.responsibility} for "${task}"`
-    };
-  });
-}
-
-export function buildRunScenario(task: string, roleIds: string[]): ScenarioBundle {
+export async function buildRunScenario(
+  task: string,
+  roleIds: string[],
+  options: BuildRunScenarioOptions = {}
+): Promise<ScenarioBundle> {
   const sanitizedTask = task.trim();
-  const selectedRoleIds = roleIds.length > 0 ? roleIds : ["ceo-planner", "engineer", "qa"];
+  const selectedRoleIds = roleIds;
   const runId = createRunId();
   const baseMs = Date.now();
-  const steps = buildSteps(sanitizedTask, selectedRoleIds);
   const approvalIntent = inferApprovalIntent(sanitizedTask);
+  const plannerMode = options.plannerMode ?? detectHeadPlannerMode();
   let sequence = 1;
 
   const initialEvents: RunEvent[] = [
@@ -113,57 +119,125 @@ export function buildRunScenario(task: string, roleIds: string[]): ScenarioBundl
     createEvent(baseMs, runId, sequence++, "user", "operator", "roles_assigned", "draft", {
       roleIds: selectedRoleIds
     }),
-    createEvent(baseMs, runId, sequence++, "head-agent", HEAD_AGENT.id, "plan_created", "planning", {
-      steps,
-      summary: `Atlas split the task into ${steps.length} accountable workstreams.`
+    createEvent(baseMs, runId, sequence++, "head-agent", HEAD_AGENT.id, "planning_started", "planning", {
+      summary: "Atlas is generating the head plan..."
     })
   ];
 
-  const queuedEvents: RunEvent[] = [];
-  let previousAgentId: string = HEAD_AGENT.id;
-  let previousActorType: ActorType = "head-agent";
+  if (selectedRoleIds.length === 0) {
+    initialEvents.push(
+      createEvent(baseMs, runId, sequence++, "head-agent", HEAD_AGENT.id, "run_failed", "failed", {
+        summary: "Atlas cannot create a plan without selected canvas agents.",
+        diagnostics: ["Select at least one canvas agent before starting a run."]
+      })
+    );
 
-  steps.forEach((step, index) => {
-    const role = getRoleById(step.ownerId);
-    const handoffSource =
-      previousAgentId === HEAD_AGENT.id ? HEAD_AGENT.label : getRoleById(previousAgentId).label;
-    const handoffTarget = role.label;
+    return {
+      runId,
+      initialEvents,
+      queuedEvents: []
+    };
+  }
 
-    queuedEvents.push(
-      createEvent(
+  const selectedRoles = selectedRoleIds.map((roleId) => getRoleById(roleId));
+  options.onInitialEvents?.({
+    runId,
+    initialEvents: [...initialEvents]
+  });
+
+  const planningResult = await createHeadPlan(
+    {
+      task: sanitizedTask,
+      roles: selectedRoles,
+      cwd: options.cwd
+    },
+    plannerMode,
+    (update) => {
+      const summary = update.details.length > 0
+        ? `${update.message} ${update.details.join(" ")}`
+        : update.message;
+      const event = createEvent(
         baseMs,
         runId,
         sequence++,
-        previousActorType,
-        previousAgentId,
-        "handoff_requested",
-        "dispatching",
+        "head-agent",
+        HEAD_AGENT.id,
+        "planning_started",
+        "planning",
         {
-          fromAgentId: previousAgentId,
-          toAgentId: role.id,
-          stepId: step.id,
-          note: `${handoffSource} handed work to ${handoffTarget} for ${step.title.toLowerCase()}.`
+          summary,
+          details: update.details,
+          level: update.level
         }
-      )
+      );
+      initialEvents.push(event);
+      options.onPlanningEvent?.(event);
+    },
+    options.signal
+  );
+
+  if (!planningResult.ok) {
+    initialEvents.push(
+      createEvent(baseMs, runId, sequence++, "head-agent", HEAD_AGENT.id, "run_failed", "failed", {
+        summary: planningResult.diagnostic,
+        diagnostics: planningResult.details
+      })
+    );
+
+    return {
+      runId,
+      initialEvents,
+      queuedEvents: []
+    };
+  }
+
+  const plan = planningResult.plan;
+  const steps = plan.steps;
+  initialEvents.push(
+    createEvent(baseMs, runId, sequence++, "head-agent", HEAD_AGENT.id, "plan_created", "planning", {
+      executionPlan: plan,
+      steps,
+      taskPackets: plan.taskPackets,
+      workflowEdges: plan.workflowEdges,
+      summary: plan.headSummary
+    })
+  );
+
+  const queuedEvents: RunEvent[] = [];
+
+  plan.workflowEdges.forEach((edge) => {
+    const step = steps.find((candidate) => candidate.ownerId === edge.toAgentId);
+    if (!step) return;
+
+    queuedEvents.push(
+      createHandoffEvent(baseMs, runId, sequence++, edge, step.id)
     );
 
     queuedEvents.push(
-      createEvent(baseMs, runId, sequence++, "role-agent", role.id, "agent_status_changed", "waiting_on_agent", {
+      createEvent(baseMs, runId, sequence++, "role-agent", edge.toAgentId, "agent_status_changed", "waiting_on_agent", {
         task: step.title,
         status: "active"
       })
     );
 
+    const packet = plan.taskPackets.find((p) => p.agentId === edge.toAgentId);
     queuedEvents.push(
-      createEvent(baseMs, runId, sequence++, "role-agent", role.id, "agent_output_recorded", "dispatching", {
+      createEvent(baseMs, runId, sequence++, "role-agent", edge.toAgentId, "agent_output_recorded", "dispatching", {
         stepId: step.id,
-        summary: `${role.label} completed its lane and packaged the next handoff.`,
-        output: `${role.label} delivered a grounded update for "${sanitizedTask}" with evidence aligned to ${role.responsibility.toLowerCase()}.`
+        summary: `${getRoleById(edge.toAgentId).label} recorded its assigned task packet.`,
+        output: buildSyntheticRoleOutput(edge.toAgentId, plan, sanitizedTask),
+        structuredOutput: packet ? {
+          goal: packet.goal,
+          why: packet.why,
+          context: packet.context,
+          constraints: packet.constraints,
+          doneWhen: packet.doneWhen,
+          next: packet.next,
+          returnPolicy: packet.returnPolicy
+        } : undefined
       })
     );
 
-    previousAgentId = role.id;
-    previousActorType = "role-agent";
   });
 
   queuedEvents.push(
@@ -172,8 +246,8 @@ export function buildRunScenario(task: string, roleIds: string[]): ScenarioBundl
       status: "active"
     }),
     createEvent(baseMs, runId, sequence++, "head-agent", HEAD_AGENT.id, "agent_output_recorded", "dispatching", {
-      summary: "Atlas consolidated the specialist outputs into one operator-facing recommendation.",
-      output: `Atlas reviewed ${steps.length} specialist contributions and aligned them into a single recommendation for "${sanitizedTask}".`
+      summary: plan.headSummary,
+      output: `${plan.summary} ${plan.workflowSummary}`.trim()
     })
   );
 
@@ -198,6 +272,50 @@ export function buildRunScenario(task: string, roleIds: string[]): ScenarioBundl
     initialEvents,
     queuedEvents
   };
+}
+
+function createHandoffEvent(
+  baseMs: number,
+  runId: string,
+  sequence: number,
+  edge: WorkflowEdge,
+  stepId: string
+): RunEvent {
+  const actorType: ActorType =
+    edge.fromAgentId === HEAD_AGENT.id ? "head-agent" : "role-agent";
+  return createEvent(
+    baseMs,
+    runId,
+    sequence,
+    actorType,
+    edge.fromAgentId,
+    "handoff_requested",
+    "dispatching",
+    {
+      fromAgentId: edge.fromAgentId,
+      toAgentId: edge.toAgentId,
+      stepId,
+      note: edge.note,
+      edgeKind: edge.kind,
+      requiresIntermediateReturn: edge.requiresIntermediateReturn
+    }
+  );
+}
+
+function buildSyntheticRoleOutput(agentId: string, plan: ExecutionPlan, task: string): string {
+  const packet = plan.taskPackets.find((candidate) => candidate.agentId === agentId);
+  const role = getRoleById(agentId);
+
+  if (!packet) {
+    return `${role.label} did not receive a task packet for "${task}".`;
+  }
+
+  return [
+    `${role.label} is a PoC lane in this milestone.`,
+    `Goal: ${packet.goal}`,
+    `Next: ${packet.next}`,
+    `Return policy: ${packet.returnPolicy}`
+  ].join(" ");
 }
 
 export function buildApprovalResolutionEvents(

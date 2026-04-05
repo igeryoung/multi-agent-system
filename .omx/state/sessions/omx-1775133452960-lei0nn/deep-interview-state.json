@@ -1,227 +1,136 @@
 {
   "active": false,
   "current_phase": "completed",
-  "started_at": "2026-04-04T01:33:59Z",
-  "iteration": 7,
-  "task_description": "Clarify requirements for adding a sidebar to create and maintain sessions in the existing multi-agent system app.",
-  "interview_id": "3577E88C-0E46-4C13-9E17-D9D6155B675E",
+  "started_at": "2026-04-04T06:58:46Z",
+  "iteration": 8,
+  "task_description": "Clarify requirements for turning the existing v1 multi-agent demo into real agent usage with a head node that partitions work, assigns subtasks, and uses a context-engineered task packet.",
+  "interview_id": "8F82C722-2786-44FB-A5F1-A8E60B64F9B1",
   "profile": "standard",
   "type": "brownfield",
-  "initial_idea": "for this app, I want to add a side bar to create/maintain the session",
+  "initial_idea": "now I finish v1's contain and I want to keep building real agent usage and division of works. I only has a rough idea: 1. user assign task to head node (and all commuticate and report should be respond by head node) 2. head node's task: base on agent and their desc in current env, partition the task, task pipeline, and assign to correspond agent. 3. each assigned subtask should base on best pratice of context engineer: Goal, Context, Constraints, Done when, Next.",
   "rounds": [
     {
       "round": 1,
-      "question": "I found the app already persists past runs and even builds a selectable run catalog, but the UI only shows one active conversation. Should a “session” in this sidebar mean: 1. one persisted run/conversation history, or 2. a broader workspace state that also preserves the pre-run draft canvas, selected agents, and unfinished task input? Answer with which of those you mean, and what the user should be able to do with it first: switch, create, rename, delete/archive, or resume.",
-      "answer": "just like codex: each session is a new env to deal different task and conversation history is independent on each session",
+      "question": "For the next version, which milestone do you want first? A. real execution now: the head node actually invokes agents and waits for real outputs B. contract first: the head node produces the new task packet and pipeline, but execution can stay simulated for one more version C. both together in one pass Answer with A, B, or C, and add one proof signal for “this is real enough” from your perspective.",
+      "answer": "B",
       "scores": {
-        "intent": 0.72,
-        "outcome": 0.55,
-        "scope": 0.42,
-        "constraints": 0.18,
-        "success": 0.15,
-        "context": 0.82
+        "intent": 0.78,
+        "outcome": 0.62,
+        "scope": 0.46,
+        "constraints": 0.35,
+        "success": 0.14,
+        "context": 0.9
       },
-      "ambiguity": 0.502,
-      "target_dimension": "outcome/scope",
-      "justification": {
-        "intent": "The desired product direction is now clearer: isolated task environments rather than one shared conversation lane.",
-        "outcome": "We know each session should carry independent task and conversation history, but the target sidebar behavior is still not fully defined.",
-        "scope": "The answer clarifies what a session is, but not which session-management actions are required in version 1.",
-        "constraints": "No explicit limits yet on migration, deletion, draft handling, or auto-selection behavior.",
-        "success": "No concrete acceptance signals yet for when the sidebar is good enough.",
-        "context": "Answer aligns with brownfield evidence that persisted runs already exist and could become session records."
-      },
-      "gates": {
-        "non_goals": false,
-        "decision_boundaries": false,
-        "pressure_pass_complete": false
-      },
-      "current_stage": "intent-first",
-      "next_focus": "scope/non-goals"
+      "ambiguity": 0.455,
+      "target_dimension": "outcome/scope"
     },
     {
       "round": 2,
-      "question": "For version 1 only, what must the sidebar let the user do on day one? Answer in this shape: must have: ... not in v1: ... Use concrete actions like create session, switch session, resume latest, rename, delete/archive, search, group by project, persist draft graph, duplicate session, import/export.",
-      "answer": "must have: create session, switch session, rename, delete/archive",
+      "question": "For this contract-first milestone, what must the head node produce before any real agent execution exists yet? Answer in this shape: must have: ... not in this milestone: ... Use concrete items like: structured plan, per-agent task packet, explicit handoff chain, head-only user summary, approval gate rules, retry/failure contract, agent discovery from current env, agent-to-agent direct messaging, real subagent invocation",
+      "answer": "must have: structured plan, per-agent task packet, explicit handoff chain, head-only user summary, agent discovery from current env, agent-to-agent direct messaging",
       "scores": {
-        "intent": 0.74,
-        "outcome": 0.66,
-        "scope": 0.63,
-        "constraints": 0.24,
-        "success": 0.18,
-        "context": 0.84
+        "intent": 0.82,
+        "outcome": 0.78,
+        "scope": 0.72,
+        "constraints": 0.44,
+        "success": 0.16,
+        "context": 0.92
       },
-      "ambiguity": 0.427,
-      "target_dimension": "scope/non-goals",
-      "justification": {
-        "intent": "The session-management intent remains stable and product-oriented.",
-        "outcome": "The sidebar’s primary job is clearer: manage isolated sessions rather than only display history.",
-        "scope": "The required v1 actions are now explicit, but exclusions are still missing and delete/archive is still combined as one unresolved behavior.",
-        "constraints": "Still no explicit guardrails on data retention, destructive confirmation, or draft/session coupling.",
-        "success": "Still lacks concrete proof signals for a correct implementation.",
-        "context": "The requested actions fit the existing persisted run catalog and likely require UI expansion rather than a full backend redesign."
-      },
-      "gates": {
-        "non_goals": false,
-        "decision_boundaries": false,
-        "pressure_pass_complete": false
-      },
-      "current_stage": "intent-first",
-      "next_focus": "non-goals",
-      "challenge_mode": "contrarian"
+      "ambiguity": 0.337,
+      "target_dimension": "scope/non-goals"
     },
     {
       "round": 3,
-      "question": "Which two useful-sounding features should version 1 explicitly not support, so this stays a session sidebar instead of turning into a full workspace system? Examples: search, folders/projects, duplicate session, persist draft graph per session, cross-session compare, import/export, share session, restore deleted session.",
-      "answer": "only search, folders/projects, and the others are not what I want",
+      "question": "Boundary question: when you say `agent-to-agent direct messaging`, which rule do you want? A. agents may message each other directly, but only the head node may talk to the user B. agents may not message each other directly; every handoff/report must go through head C. agents may message each other directly only after the head has explicitly authorized that edge in the plan Answer with `A`, `B`, or `C`, and one sentence on why.",
+      "answer": "A",
       "scores": {
-        "intent": 0.74,
-        "outcome": 0.68,
-        "scope": 0.78,
-        "constraints": 0.28,
-        "success": 0.18,
-        "context": 0.85
+        "intent": 0.83,
+        "outcome": 0.8,
+        "scope": 0.75,
+        "constraints": 0.58,
+        "success": 0.17,
+        "context": 0.93
       },
-      "ambiguity": 0.377,
-      "target_dimension": "non-goals",
-      "justification": {
-        "intent": "The core desire remains simple isolated sessions with minimal management UI.",
-        "outcome": "The sidebar is more clearly a lightweight session manager, not a broader workspace surface.",
-        "scope": "Non-goals are now explicit enough for v1: no search, no folder/project grouping, and no additional advanced session-management features from the example list.",
-        "constraints": "The answer narrows product sprawl but still leaves destructive-action rules unresolved.",
-        "success": "Still lacks concrete observable behaviors that prove the feature is complete.",
-        "context": "These exclusions fit the current brownfield app, which has no project taxonomy or advanced session operations today."
-      },
-      "gates": {
-        "non_goals": true,
-        "decision_boundaries": false,
-        "pressure_pass_complete": false
-      },
-      "current_stage": "intent-first",
-      "next_focus": "decision-boundaries",
-      "challenge_mode": "simplifier",
-      "normalized_non_goals": [
-        "No search in v1.",
-        "No folders/projects grouping in v1.",
-        "No advanced session features like duplicate/import-export/share/restore/cross-session compare in v1."
-      ]
+      "ambiguity": 0.2855,
+      "target_dimension": "decision-boundaries"
     },
     {
       "round": 4,
-      "question": "For these four actions, which should happen immediately and which should require a confirmation dialog? create session, switch session, rename session, delete/archive session. Also clarify one ambiguity: do you want delete and archive to both exist, or is v1 actually just one of them?",
-      "answer": "create session and switch session. could just support delete",
+      "question": "If agents can message each other directly, what must the head node still receive? A. every direct message in full B. only summarized checkpoints C. only final outputs plus explicit blockers D. the head must explicitly approve each new peer-to-peer edge before it is used Answer with `A`, `B`, `C`, or `D`, and add one short reason.",
+      "answer": "typically C. And If it plan the workflow include return result or intermedia from some node.",
       "scores": {
-        "intent": 0.75,
-        "outcome": 0.7,
-        "scope": 0.82,
-        "constraints": 0.42,
-        "success": 0.2,
-        "context": 0.86
+        "intent": 0.84,
+        "outcome": 0.82,
+        "scope": 0.8,
+        "constraints": 0.72,
+        "success": 0.19,
+        "context": 0.94
       },
-      "ambiguity": 0.3275,
-      "target_dimension": "decision-boundaries",
-      "justification": {
-        "intent": "The user still wants Codex-like fast session isolation with minimal friction.",
-        "outcome": "The target behavior is clearer because create and switch are confirmed as immediate actions.",
-        "scope": "V1 now narrows from delete/archive to delete only, simplifying the management surface.",
-        "constraints": "There is now partial safety guidance, but rename and delete confirmation behavior are still not fully specified.",
-        "success": "Completion criteria remain mostly implicit.",
-        "context": "The answer remains consistent with the existing run catalog model and a sidebar-driven session switcher."
-      },
-      "gates": {
-        "non_goals": true,
-        "decision_boundaries": false,
-        "pressure_pass_complete": false
-      },
-      "current_stage": "intent-first",
-      "next_focus": "decision-boundaries",
-      "normalized_decision_boundaries_partial": {
-        "automatic": [
-          "Create session",
-          "Switch session"
-        ],
-        "candidate_destructive": [
-          "Delete session"
-        ],
-        "open_questions": [
-          "Should rename be immediate inline edit or require explicit save/confirmation?",
-          "Should delete always require confirmation?"
-        ]
-      }
+      "ambiguity": 0.238,
+      "target_dimension": "decision-boundaries"
     },
     {
       "round": 5,
-      "question": "Complete the rule set for the last two actions: Should rename session be an immediate inline edit, or should it require an explicit save/confirm step? Should delete session always show a confirmation dialog before removing it?",
-      "answer": "rename : inline edit.\ndelete: confirm",
+      "question": "What should this milestone explicitly not do yet? Answer in this shape: `not in this milestone: ...` Pick 2-4 concrete exclusions, for example: real subagent invocation, auto-retry / failure recovery policy, token or cost budgeting, approval gate system redesign, visual graph redesign, persistence of per-agent private memory, ranking/scoring agents by performance",
+      "answer": "not in this milestone: real subagent invocation, auto-retry / failure recovery policy, token or cost budgeting, approval gate system redesign and the testing model using local codex (could run from tmux? )",
       "scores": {
-        "intent": 0.75,
-        "outcome": 0.72,
-        "scope": 0.84,
-        "constraints": 0.62,
-        "success": 0.24,
-        "context": 0.87
+        "intent": 0.85,
+        "outcome": 0.83,
+        "scope": 0.89,
+        "constraints": 0.82,
+        "success": 0.22,
+        "context": 0.94
       },
-      "ambiguity": 0.2785,
-      "target_dimension": "decision-boundaries",
-      "justification": {
-        "intent": "Intent remains stable: fast isolated sessions with lightweight management.",
-        "outcome": "The sidebar behavior is clearer because rename and delete interaction rules are now explicit.",
-        "scope": "The v1 action surface is tightly bounded around create, switch, rename, and delete.",
-        "constraints": "The destructive and non-destructive session actions now have clear confirmation rules.",
-        "success": "Acceptance signals are still weak; we know how the controls behave but not yet how to prove the feature is complete.",
-        "context": "This maps cleanly onto the existing persisted run catalog while defining missing UX rules."
-      },
-      "gates": {
-        "non_goals": true,
-        "decision_boundaries": true,
-        "pressure_pass_complete": false
-      },
-      "current_stage": "feasibility",
-      "next_focus": "success / pressure-pass",
-      "normalized_decision_boundaries": {
-        "automatic": [
-          "Create session",
-          "Switch session",
-          "Rename session via inline edit"
-        ],
-        "requires_approval": [
-          "Delete session via confirmation dialog"
-        ]
-      }
+      "ambiguity": 0.2045,
+      "target_dimension": "non-goals"
     },
     {
       "round": 6,
-      "question": "Pressure pass: I found this app currently has a pre-run draft canvas with selected agents and a task input before a run starts. To make sessions truly “independent like Codex,” when the user clicks create session, should the new session start: A. completely blank or B. copied from the current draft state?",
+      "question": "What are the 2 or 3 concrete proof signals that make this contract-first milestone done? Answer in this shape: `done when: ...` Include whether local Codex via `tmux` is: required now, nice to have later, or out of scope for this milestone Examples of proof signals: submitting one task produces a structured plan plus per-agent packets in the run data, the head summary is derived from those packets, not hardcoded text, the UI can show which nodes must return intermediate results, one test proves agent discovery and packet generation from current env works",
+      "answer": "1. Codex via tmux required now. 2. submitting one task produces a structured plan, pipeline of workflow, per-agent's task. and this could implement by some prompt or agent skill on head node. 3. fix format for task assign base on best pratice of context engineer. (you could refine/modify it to fix our goal) 4. each subtask could view their task input (will be 3. output)",
+      "scores": {
+        "intent": 0.88,
+        "outcome": 0.9,
+        "scope": 0.86,
+        "constraints": 0.68,
+        "success": 0.78,
+        "context": 0.95
+      },
+      "ambiguity": 0.153,
+      "target_dimension": "success / pressure-pass"
+    },
+    {
+      "round": 7,
+      "question": "Pressure pass: your latest answer conflicts with an earlier boundary. Earlier: not in this milestone: `real subagent invocation` Now: `Codex via tmux required now` Which interpretation is correct? A. only the head node may run local Codex via `tmux` now, to generate the plan and per-agent task packets; role agents still do not execute for real B. the head node and role agents should all run for real via local Codex/`tmux` now C. no live Codex execution is needed inside the app yet; `tmux` is only for manual developer testing outside the product flow",
+      "answer": "A. and current subagent could only show assigned task for poc.",
+      "scores": {
+        "intent": 0.89,
+        "outcome": 0.92,
+        "scope": 0.9,
+        "constraints": 0.84,
+        "success": 0.8,
+        "context": 0.95
+      },
+      "ambiguity": 0.1125,
+      "target_dimension": "pressure-pass / decision-boundaries"
+    },
+    {
+      "round": 8,
+      "question": "In this app, what should `agent discovery from current env` actually mean for the head node? A. only the agents currently placed/selected in the canvas for this session B. all registered agents known by the app, even if not placed on the canvas yet C. a separate runtime source outside the current UI state",
       "answer": "A",
       "scores": {
-        "intent": 0.82,
-        "outcome": 0.8,
-        "scope": 0.88,
-        "constraints": 0.7,
-        "success": 0.28,
-        "context": 0.92
+        "intent": 0.89,
+        "outcome": 0.92,
+        "scope": 0.93,
+        "constraints": 0.9,
+        "success": 0.84,
+        "context": 0.98
       },
-      "ambiguity": 0.21300000000000008,
-      "target_dimension": "pressure-pass on session isolation",
-      "justification": {
-        "intent": "The original Codex-style isolation goal is now pressure-tested and clarified into a fresh-environment requirement.",
-        "outcome": "The expected result of create session is concrete: a blank new environment rather than a cloned draft.",
-        "scope": "V1 remains tightly scoped around a simple session manager with fresh session creation.",
-        "constraints": "Session isolation now includes a concrete rule about draft-state carryover.",
-        "success": "There are still too few explicit user-visible proof signals for completion.",
-        "context": "The answer directly resolves a brownfield-specific ambiguity caused by the existing shared draft canvas."
-      },
-      "gates": {
-        "non_goals": true,
-        "decision_boundaries": true,
-        "pressure_pass_complete": true
-      },
-      "current_stage": "feasibility",
-      "next_focus": "success",
-      "pressure_pass_note": "Revisited the earlier 'like Codex' claim against the existing draft canvas and resolved that new sessions must start completely blank."
+      "ambiguity": 0.091,
+      "target_dimension": "brownfield grounding"
     }
   ],
-  "current_ambiguity": 0.148,
+  "current_ambiguity": 0.091,
   "threshold": 0.2,
   "max_rounds": 12,
   "challenge_modes_used": [
@@ -229,44 +138,43 @@
     "simplifier"
   ],
   "codebase_context": {
-    "repo_shape": "existing React/TypeScript app",
+    "repo_shape": "existing React/TypeScript app with event-projected multi-agent demo",
     "evidence": [
-      "Run catalog already exists in src/hooks/use-run-store.ts",
-      "Runs persist in localStorage via src/server/events/storage.ts",
-      "UI currently renders only one active conversation in src/app/App.tsx",
-      "App shell already has room for an additional navigation surface in src/components/layout/app-shell.tsx"
+      "src/shared/contracts/types.ts already models head vs role agents",
+      "src/server/orchestrator/scenario.ts is currently synthetic and replay-based",
+      "src/server/events/projectRun.ts already supports plan/handoff/output/approval projections",
+      "src/hooks/use-live-drain.ts drains queued events instead of invoking real agents"
     ]
   },
   "current_stage": "completed",
   "current_focus": "handoff",
-  "context_snapshot_path": ".omx/context/session-sidebar-20260404T013359Z.md",
+  "context_snapshot_path": ".omx/context/real-agent-usage-division-of-work-20260404T065846Z.md",
   "non_goals_explicit": true,
   "decision_boundaries_explicit": true,
   "pressure_pass_complete": true,
-  "last_turn_at": "2026-04-04T01:38:40Z",
-  "completed_at": "2026-04-04T01:38:40Z",
-  "transcript_path": ".omx/interviews/session-sidebar-20260404T013359Z.md",
-  "spec_path": ".omx/specs/deep-interview-session-sidebar.md",
+  "last_turn_at": "2026-04-04T07:35:30Z",
+  "completed_at": "2026-04-04T07:35:30Z",
+  "transcript_path": ".omx/interviews/real-agent-usage-division-of-work-20260404T065846Z.md",
+  "spec_path": ".omx/specs/deep-interview-real-agent-usage-division-of-work.md",
   "summary": {
-    "session_model": "Codex-like isolated sessions with independent task/conversation context.",
-    "v1_scope": [
-      "Create session",
-      "Switch session",
-      "Rename session inline",
-      "Delete session with confirmation"
+    "milestone_type": "Contract-first, with live head-node Codex via tmux only.",
+    "must_have": [
+      "Structured plan",
+      "Workflow pipeline",
+      "Per-agent task packets",
+      "Head-only user summary",
+      "Agent discovery from selected canvas agents",
+      "Direct internal agent-to-agent messaging"
     ],
     "non_goals": [
-      "No search",
-      "No folders/projects grouping",
-      "No advanced session features",
-      "No archive support in v1"
+      "No real role-agent execution",
+      "No auto-retry/failure recovery",
+      "No token/cost budgeting",
+      "No approval gate redesign"
     ],
-    "fresh_session_rule": "New sessions start completely blank.",
-    "acceptance": [
-      "Creating a session opens a blank canvas/chat",
-      "Switching restores that session's own agent status and conversation/history",
-      "Deleting confirms and removes only that session"
-    ]
+    "execution_boundary": "Only the head node runs local Codex via tmux now; subagents only show assigned tasks for PoC.",
+    "visibility_rule": "Head receives final outputs and blockers by default, with plan-defined intermediate-return exceptions.",
+    "agent_discovery": "Only current session canvas-selected agents are discoverable."
   },
   "max_iterations": 12
 }

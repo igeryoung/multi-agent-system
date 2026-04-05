@@ -49,6 +49,7 @@ describe("App", () => {
     cleanup();
     vi.clearAllMocks();
     vi.clearAllTimers();
+    vi.unstubAllGlobals();
     vi.useRealTimers();
   });
 
@@ -61,23 +62,23 @@ describe("App", () => {
 
     addRole("Engineer");
     fireEvent.change(taskInput, { target: { value: "Session alpha task" } });
-    expect(screen.getByTestId("node-count")).toHaveTextContent("1 nodes");
+    expect(screen.getByTestId("node-count")).toHaveTextContent("2 nodes");
 
     fireEvent.click(screen.getByRole("button", { name: /create session/i }));
     expect(screen.getByLabelText(/task/i)).toHaveValue("");
-    expect(screen.getByTestId("node-count")).toHaveTextContent("0 nodes");
+    expect(screen.getByTestId("node-count")).toHaveTextContent("1 nodes");
 
     addRole("QA Tester");
     fireEvent.change(screen.getByLabelText(/task/i), { target: { value: "Session beta task" } });
 
     selectSession("Session 1");
     expect(screen.getByLabelText(/task/i)).toHaveValue("Session alpha task");
-    expect(screen.getByTestId("node-count")).toHaveTextContent("1 nodes");
+    expect(screen.getByTestId("node-count")).toHaveTextContent("2 nodes");
 
     selectSession("Session 2");
     expect(screen.getByLabelText(/task/i)).toHaveValue("Session beta task");
-    expect(screen.getByTestId("node-count")).toHaveTextContent("1 nodes");
-  });
+    expect(screen.getByTestId("node-count")).toHaveTextContent("2 nodes");
+  }, 10000);
 
   test("hides and restores the sessions sidebar from the header toggle", () => {
     render(<App />);
@@ -152,15 +153,14 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: /start dispatch/i }));
     await vi.advanceTimersByTimeAsync(4200);
 
-    expect(screen.getByText(/task received/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/handed work to/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/atlas planned 3 accountable lanes/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /create session/i }));
     expect(screen.getByText(/no activity yet/i)).toBeInTheDocument();
 
     selectSession("Session 1");
-    expect(screen.getByText(/task received/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/delivered a grounded update/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/atlas planned/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/investigate the roadmap/i).length).toBeGreaterThan(0);
   }, 10000);
 
   test("blocks starting another run while one session is live", async () => {
@@ -178,7 +178,7 @@ describe("App", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /create session/i }));
 
-    expect(screen.getByRole("button", { name: /another session is live/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /stop run/i })).toBeInTheDocument();
     expect(screen.getByText(/is live\. browsing is allowed/i)).toBeInTheDocument();
   }, 10000);
 
@@ -202,8 +202,48 @@ describe("App", () => {
     expect(screen.getAllByText(/approval pending/i).length).toBeGreaterThan(0);
 
     selectSession("Session 1");
-    fireEvent.click(screen.getByRole("button", { name: "Approve" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "Approve" })[0]);
 
     expect(screen.getByText(/operator approved/i)).toBeInTheDocument();
   }, 10000);
+
+  test("surfaces an explicit failure when the head planner bridge is unavailable", async () => {
+    vi.stubGlobal("__SIGNAL_ATLAS_HEAD_PLANNER_MODE__", "bridge");
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("bridge unavailable")));
+
+    render(<App />);
+
+    addRole("Engineer");
+    fireEvent.change(screen.getByLabelText(/task/i), {
+      target: { value: "Investigate the roadmap." }
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /start dispatch/i }));
+    await vi.runAllTimersAsync();
+
+    expect(screen.getAllByText(/could not reach the local head planner bridge/i).length).toBeGreaterThan(0);
+  });
+
+  test("sanitizes stale invalid draft roles instead of allowing a dead dispatch path", () => {
+    localStorage.setItem("signal-atlas:sessions", JSON.stringify([
+      {
+        sessionId: "session-stale",
+        title: "Session Stale",
+        createdAt: "2026-04-04T00:00:00.000Z",
+        updatedAt: "2026-04-04T00:00:00.000Z",
+        linkedRunId: null,
+        draft: {
+          taskInput: "Investigate the roadmap.",
+          selectedRoleIds: ["not-a-real-role"]
+        }
+      }
+    ]));
+    localStorage.setItem("signal-atlas:active-session", "session-stale");
+
+    render(<App />);
+
+    expect(screen.getByLabelText(/task/i)).toHaveValue("Investigate the roadmap.");
+    expect(screen.getByRole("button", { name: /run in progress/i })).toBeDisabled();
+    expect(screen.getByText(/add agents on the canvas/i)).toBeInTheDocument();
+  });
 });

@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"npm run build 2>&1\",\"timeout\":60000,\"description\":\"Run build to verify changes\"}",
-  "error": "Exit code 2\n\n> multi-agent-system@0.1.0 build\n> tsc -p tsconfig.json && vite build\n\nsrc/components/conversation/conversation-panel.tsx(50,16): error TS2550: Property 'findLast' does not exist on type 'ConversationMessage[]'. Do you need to change your target library? Try changing the 'lib' compiler option to 'es2023' or later.\nsrc/components/conversation/conversation-panel.tsx(50,26): error TS7006: Parameter 'm' implicitly has an 'any' type.",
-  "timestamp": "2026-04-04T06:20:39.061Z",
-  "retry_count": 1
-}

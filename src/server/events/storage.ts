@@ -5,6 +5,7 @@ import type {
   SessionRecord
 } from "../../shared/contracts/types";
 import { projectRun } from "./projectRun";
+import { sanitizeRoleIds } from "../../shared/contracts/types";
 
 const RUNS_KEY = "signal-atlas:runs";
 const SESSIONS_KEY = "signal-atlas:sessions";
@@ -17,10 +18,10 @@ interface LiveRuntimeSnapshot {
 }
 
 const ALLOWED_PHASES: Record<RunPhase, RunPhase[]> = {
-  draft: ["draft", "planning"],
-  planning: ["planning", "dispatching", "waiting_on_agent", "awaiting_approval", "completed", "failed"],
-  dispatching: ["dispatching", "waiting_on_agent", "awaiting_approval", "completed", "failed"],
-  waiting_on_agent: ["waiting_on_agent", "dispatching", "awaiting_approval", "completed", "failed"],
+  draft: ["draft", "planning", "cancelled"],
+  planning: ["planning", "dispatching", "waiting_on_agent", "awaiting_approval", "completed", "failed", "cancelled"],
+  dispatching: ["dispatching", "waiting_on_agent", "awaiting_approval", "completed", "failed", "cancelled"],
+  waiting_on_agent: ["waiting_on_agent", "dispatching", "awaiting_approval", "completed", "failed", "cancelled"],
   awaiting_approval: ["awaiting_approval", "dispatching", "completed", "failed", "cancelled"],
   completed: ["completed"],
   failed: ["failed"],
@@ -48,7 +49,7 @@ function ensureDraft(value: Partial<SessionDraft> | undefined): SessionDraft {
   return {
     taskInput: typeof value?.taskInput === "string" ? value.taskInput : "",
     selectedRoleIds: Array.isArray(value?.selectedRoleIds)
-      ? value.selectedRoleIds.filter((roleId): roleId is string => typeof roleId === "string")
+      ? sanitizeRoleIds(value.selectedRoleIds)
       : []
   };
 }
@@ -58,14 +59,23 @@ function normalizeSessions(value: unknown): SessionRecord[] {
 
   return value
     .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object")
-    .map((item) => ({
-      sessionId: String(item.sessionId ?? ""),
-      title: String(item.title ?? "Untitled Session"),
-      createdAt: String(item.createdAt ?? ""),
-      updatedAt: String(item.updatedAt ?? ""),
-      linkedRunId: item.linkedRunId ? String(item.linkedRunId) : null,
-      draft: ensureDraft(item.draft as Partial<SessionDraft> | undefined)
-    }))
+    .map((item) => {
+      // Migrate legacy linkedRunId (string | null) to linkedRunIds (string[])
+      let linkedRunIds: string[] = [];
+      if (Array.isArray(item.linkedRunIds)) {
+        linkedRunIds = item.linkedRunIds.filter((id): id is string => typeof id === "string" && id.length > 0);
+      } else if (item.linkedRunId && typeof item.linkedRunId === "string") {
+        linkedRunIds = [item.linkedRunId];
+      }
+      return {
+        sessionId: String(item.sessionId ?? ""),
+        title: String(item.title ?? "Untitled Session"),
+        createdAt: String(item.createdAt ?? ""),
+        updatedAt: String(item.updatedAt ?? ""),
+        linkedRunIds,
+        draft: ensureDraft(item.draft as Partial<SessionDraft> | undefined)
+      };
+    })
     .filter((session) => session.sessionId.length > 0 && session.createdAt.length > 0);
 }
 
@@ -80,7 +90,7 @@ function buildBootstrappedSessions(runMap: Record<string, RunEvent[]>): SessionR
         title: projection.title,
         createdAt: timestamp,
         updatedAt: timestamp,
-        linkedRunId: runId,
+        linkedRunIds: [runId],
         draft: { taskInput: "", selectedRoleIds: [] }
       } satisfies SessionRecord;
     })
